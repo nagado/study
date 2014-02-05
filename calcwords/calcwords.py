@@ -24,7 +24,6 @@ def clcl(f,d):
 
 ##Replace all unusable things.
 def rplc(line):
-    
     line = line.replace('\n' , "")
     s = ".,;:'}{[]|\/?!@#$%^&*()_+=-<>1234567890~`"
     for l in s:
@@ -34,14 +33,15 @@ def rplc(line):
     
     return lst
 
-def srt(d):
-    ll = []
-    for word in d:
-        lst = [word, d[word]]
-        ll.append(lst)
-    ll.sort(key=sortByValue)
-    ll.reverse()
-    return ll
+def sort_words(words):
+    l = []
+
+    for word_and_count in words.items():
+        l.append(word_and_count)
+
+    l.sort(key=sortByValue)
+    l.reverse()
+    return l
 
 
 def sortByValue(inputStr):
@@ -56,7 +56,7 @@ def prnt (ll,f2):
 ## Use functions
 
 clcl(f,d)
-ll = srt(d)
+ll = sort_words(d)
 prnt(ll,f2)
   
 ## Clearing after work
