@@ -4,9 +4,7 @@ f2 = open ("dic.txt", "w")
 d = {}
 
 
-
 def clcl(f,d):
-
 ## For every line, word: calculate how much words on a text
   for line in f:
     lst = rplc(line)
@@ -23,8 +21,6 @@ def clcl(f,d):
 ## Print keys and values one by one in dict
         d2 = {word:w}
         d.update(d2)
-
-
 
 ##Replace all unusable things.
 def rplc(line):
@@ -52,23 +48,17 @@ def sortByValue(inputStr):
     return inputStr[1]
 
 
-
-
 def prnt (ll,f2):    
     for lst in ll:
         print >>f2, "{}:{}".format(lst[0], lst[1])
-  
 
-
+ 
 ## Use functions
 
 clcl(f,d)
-
 ll = srt(d)
-
 prnt(ll,f2)
   
 ## Clearing after work
-
 f.close()
 f2.close()
