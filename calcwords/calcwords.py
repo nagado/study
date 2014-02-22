@@ -1,6 +1,6 @@
 ##FUNCTIONS
 
-def clcl(f,d):
+def clcl():
 
   for line in f:
     lst = rplc(line)
@@ -20,6 +20,7 @@ def clcl(f,d):
 
 
 def rplc(line):
+
     line = line.replace('\n' , "")
     s = ".,;:'}{[]|\/?!@#$%^&*()_+=-<>1234567890~`"
     for l in s:
@@ -29,10 +30,10 @@ def rplc(line):
     
     return lst
 
-def sort_words(words):
+def sort_words():
     l = []
 
-    for word_and_count in words.items():
+    for word_and_count in d.items():
         l.append(word_and_count)
 
     l.sort(key=sortByValue)
@@ -44,8 +45,8 @@ def sortByValue(inputStr):
     return inputStr[1]
 
 
-def prnt (ll,f2):    
-    for lst in ll:
+def prnt():    
+    for lst in sort_words():
         print >>f2, "{}:{}".format(lst[0], lst[1])
 
  
@@ -55,8 +56,8 @@ f = open (sys.argv[1], "r")
 f2 = open (sys.argv[2], "w")
 
 d = {}
-clcl(f,d)
-prnt(sort_words(d),f2)
+clcl()
+prnt()
   
 
 f.close()
