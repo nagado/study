@@ -1,11 +1,7 @@
-f = open ("text.txt", "r")
-f2 = open ("dic.txt", "w")
-
-d = {}
-
+##FUNCTIONS
 
 def clcl(f,d):
-## For every line, word: calculate how much words on a text
+
   for line in f:
     lst = rplc(line)
 
@@ -18,11 +14,11 @@ def clcl(f,d):
           w = w + 1
         else:
           w = 1
-## Print keys and values one by one in dict
+
         d2 = {word:w}
         d.update(d2)
 
-##Replace all unusable things.
+
 def rplc(line):
     line = line.replace('\n' , "")
     s = ".,;:'}{[]|\/?!@#$%^&*()_+=-<>1234567890~`"
@@ -53,12 +49,16 @@ def prnt (ll,f2):
         print >>f2, "{}:{}".format(lst[0], lst[1])
 
  
-## Use functions
+## MAIN
+import sys
+f = open (sys.argv[1], "r")
+f2 = open (sys.argv[2], "w")
 
+d = {}
 clcl(f,d)
 ll = sort_words(d)
 prnt(ll,f2)
   
-## Clearing after work
+
 f.close()
 f2.close()
