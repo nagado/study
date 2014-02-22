@@ -56,8 +56,7 @@ f2 = open (sys.argv[2], "w")
 
 d = {}
 clcl(f,d)
-ll = sort_words(d)
-prnt(ll,f2)
+prnt(sort_words(d),f2)
   
 
 f.close()
