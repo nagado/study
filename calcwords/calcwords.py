@@ -9,6 +9,7 @@ def clcl():
       if word == '':
         continue 
       else:
+        word = word.lower()
         w = d.get(word)
         if d.has_key(word):
           w = w + 1
