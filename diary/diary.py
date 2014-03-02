@@ -18,15 +18,16 @@ def splitDoc():
 
 def findTags():
 
-    rawtags = re.search('<a class="tag2".*</a>', doc[208])
-    rawtags = re.split(',', rawtags.group())
-    tags = []
+    if '<a class="tag2"' in doc[208]:
+        rawtags = re.search('<a class="tag2".*</a>', doc[208])
+        rawtags = re.split(',', rawtags.group())
+        tags = []
 
-    for tag in rawtags:
-        tag = re.sub(r'<a.*">|</a.*>|^\s+|\s+$', '', tag)
-        tags.append(tag)
+        for tag in rawtags:
+            tag = re.sub(r'<a.*">|</a.*>|^\s+|\s+$', '', tag)
+            tags.append(tag)
         
-    return tags
+        return tags
 
 def findTitle():
     title = re.sub(r'^\s+|\s+$|<tr.*">|</h.*</tr>', "", doc[206])
@@ -48,50 +49,53 @@ def changeDate(date):
     return date
 
 def findText():
-    text = re.sub(r'^\s+|\s+$|<tr.*--><br><br>|</div>.*</a></font></td></tr>', '', doc[208])
+    text = re.sub(r'^\s+|\s+$|<tr.*--><br><br>|</div>.*</a></font></td></tr>|.*<td colspan="." width="99%"><div class=".">', '', doc[208])
     text = re.sub(r'<br>', '\n', text)
-    text = re.sub(r'<[/a-zA-Z0-9]+>','',text)
+    text = re.sub(r'<[/a-zA-Z0-9\\!-_=+:;@#\$%\^&\*\(\)\.,\|\s]+>','',text)
     return text
 
-def findComments():
-    
+def findComments():    
     trash = ''
     for line in doc:
         trash = trash+line
     trash = re.sub('\n', 'DIVIDER', trash)
-    comms = re.search('<tbody><tr><td colspan="3"></td></tr>.*</a></td></tr>DIVIDER</tbody></table>',trash)
-    comms = re.split('DIVIDER', comms.group()) 
+    if '<tr><td colspan="3"><a name=' in trash:
+        comms = re.search('<tbody><tr><td colspan="3"></td></tr>.*</a></td></tr>DIVIDER</tbody></table>',trash)
+        comms = re.split('DIVIDER', comms.group()) 
    
-    n1 = 1
-    n2 = 2
-    output = []
-    for i in range(len(comms)/6+1):
-        date = changeDate(re.sub(r'^\s+|\s+$|<tr><td colspan=".*<font class="m7">|\sг\.\s.*</font></td></tr>','',comms[n1]))
-        time = re.sub(r'^\s+|\s+$|<tr><td colspan=".*\sг\.\s|</font>\s<font class.*</font></td></tr>', '', comms[n1])
-        text = re.sub(r'^\s+|\s+$|<tr valign="top"><td width="1%">.*</td><td colspan="2" width="99%">|</td></tr>', '', comms[n2])
-        text = re.sub(r'<br>', '\n', text)
-        n1 = n1 + 6
-        n2 = n2 + 6
-        comm = [date, time, text]
-        output.append(comm)
+        n1 = 1
+        n2 = 2
+        for i in range(len(comms)/6+1):
+            date = changeDate(re.sub(r'^\s+|\s+$|<tr><td colspan=".*<font class="m7">|\sг\.\s.*</font></td></tr>','',comms[n1]))
+            time = re.sub(r'^\s+|\s+$|<tr><td colspan=".*\sг\.\s|</font>\s<font class.*</font></td></tr>', '', comms[n1])
+            nic = re.sub(r'^\s|\s$|<tr>.*e\(this\);">|</a>.*$', '',comms[n1])
+            text = re.sub(r'^\s+|\s+$|<tr valign="top"><td width="1%">.*</td><td colspan="2" width="99%">|</td></tr>', '', comms[n2])
+            text = re.sub(r'<br>', '\n', text)
+            text = re.sub(r'<[/a-zA-Z0-9\\!-_=+:;@#\$%\^&\*\(\)\.,\|\s"]+>','',text)
+            n1 = n1 + 6
+            n2 = n2 + 6
+            comm = [nic, date, time, text]
+            output.append(comm)
         
-    return output
+        return output
 
 def showAll():
     print "TITLE, DATE, TIME", title, date, time
     print 'TEXT:', text
-    print 'TAGS::'
-    for tag in tags:
-        print tag
+    
+    if '<a class="tag2"' in doc[208]:
+        print 'TAGS::'
+        for tag in tags:
+            print tag
 
-    for comm in comms:
-        print 'COMM:'
-        for p in comm:
-            print p    
+    if output != []:
+        for comm in comms:
+            print '.....' + comm[0] + ' ' + comm[1] + ' ' + comm[2] + '\n', comm[3] 
+            
 
 ##MAIN
 
-
+output = []
 doc = Normalize()
 comms = findComments()  ##Don't forget! It is a list inside other list
 splitDoc()
@@ -109,3 +113,4 @@ f.close()
 
 ##206 -title, 207 - time, 208-text and tags 
 ##1-comm's time and name 2-comm each 6 lines repeates
+##09, 14, 29 someting with time
