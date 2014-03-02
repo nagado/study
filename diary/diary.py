@@ -113,4 +113,3 @@ f.close()
 
 ##206 -title, 207 - time, 208-text and tags 
 ##1-comm's time and name 2-comm each 6 lines repeates
-##09, 14, 29 someting with time
