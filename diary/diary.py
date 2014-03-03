@@ -157,4 +157,7 @@ f2.close()
 
 ##206 -title, 207 - time, 208-text and tags 
 ##1-comm's time and name 2-comm each 6 lines repeates
+<<<<<<< HEAD
 ## Make download pictures and audio
+=======
+>>>>>>> 05fd228cf7f23c60435819a061e309b9bbd96e26
