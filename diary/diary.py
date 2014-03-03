@@ -2,20 +2,18 @@
 ##FUNCTIONS
 
 def normalize():
-    
+    global datetime
     doc = ''
-    
     for line in f:
         doc = doc + line
-        
     doc = doc.decode('windows-1251').encode('utf-8')
     doc = re.sub(r'\n', '<stringEnd>', doc)
-    doc = re.sub(r'^.*(?=<tr><td colspan="3"><h2 class="topic_title">)','',doc)
-    
+    datetime = re.search('<!-- Крошки -->.{,1000}<!--Подвал-->', doc)
+    datetime = datetime.group(0)
+    doc = re.sub(r'^.*(?=<tr><td colspan="?3"?><h2 class="topic_title)','',doc)
     return doc
 
 def splitDoc():
-    
     global doc
     doc = re.split('<stringEnd>', doc)
 
@@ -35,29 +33,26 @@ def findTags():
 def findTitle():
 
     title = re.sub(r'^\s+|\s+$|<tr.*">|</h.*</tr>', "", doc[0])
-    
     return title
 
 def findTime():
 
-    time = re.sub(r'^\s+|\s+$|<tr.*г\.\s|</f.*</tr>', '', doc[1])
-    
+    time = re.sub(r'<!-- Крошки -->.*\sг.\s|</span></strong>.*$', '',datetime)
+##    time = re.sub(r'^\s+|\s+$|<tr.*г\.\s|</f.*</tr>', '', doc[1])##Check in text. Canceled
     return time
 
 def findDate():
     
-    date = re.sub(r'^\s+|\s+$|<tr>.*<font class="..">|\sг.*</tr>', '', doc[1])
-    
+    date = re.sub(r'<!-- Крошки -->.*<span class="m2">|\s\.г\s.*$', '', datetime)
+##    date = re.sub(r'^\s+|\s+$|<tr>.*<font class="..">|\sг.*</tr>', '', doc[1]) ##Check in text. Canceled
     return date
 
 def changeDate(date):
-    
     months = {'января':'01', 'февраля':'02', 'марта':'03', 'апреля':'04', 'мая':'05', 'июня':'06', 'июля':'07', 'августа':'08', 'сентября':'09', 'октября':'10', 'ноября':'11', 'декабря':'12'}
     date = re.split(' ', date)
 
     date[1] = months[date[1]]
     date = date[0]+'.'+date[1]+'.'+date[2]
-    
     return date
 
 def findAvatar():
@@ -66,7 +61,7 @@ def findAvatar():
         avatar = re.sub(r'^.*<img class="avatar" alt="" src="', '<img src="', doc[2])
         avatar = re.sub(r'" onmouseover="sme.*$', '" align="left"></img>', avatar)
     else:
-        avatar = '<img src="http://fotoava.ru/images/57419.jpg" height=50px; align="left"></img>'
+        avatar = '<img src="http://fotoava.ru/images/57419.jpg" height=150px; align="left"></img>'
 
     return avatar
 
@@ -77,8 +72,7 @@ def findText():
 
     return text
 
-def findComments(): 
-    
+def findComments():    
     trash = ''
     output = []
 
@@ -123,19 +117,33 @@ def executeText(text):
         text = re.sub(r'<!-- end_quote --><!-- quote\[&gt;\] -->','<br>', text)
         text = re.sub(r'(<br>)*<!-- quote\[&gt;\] -->', ' --QUOTE-- ', text)     
         text = re.sub(r'<!-- end_quote -->', ' --/QUOTE-- ', text)
+
+    if '<!-- url[' in text:
+        text = re.sub(r'(?<=\.[a-z]{4}),', '', text)
+        text = re.sub(r'(?<=\.[a-z]{3}),', '', text)
+        text = re.sub(r'(?<=\.[a-z]{2}),', '', text)
+
+        text = re.sub(r'<!-- url\[', '--LINK--', text)
+        text = re.sub(r'] -->[^\[\]]+<!-- url_end -->', '--/LINK--', text)
         
     if '<!-- img' in text:
         text = re.sub(r'<!-- img\[[a-z]+,[a-z]+,', '--IMG--', text)
         text = re.sub(r'\] -->.*<!-- img_end -->', '--/IMG--', text)
 
     text = re.sub(r'<span class="u">', '<u>', text)
-    text = re.sub(r'</span>', '</u>', text)
-    text = re.sub(r'<(?!/?[iu]>)(?!br>)[^<>]+>|(\n)+$|^(\n)+','',text)
+    text = re.sub(r'<span class="s">', '<s>', text)
+    text = re.sub(r'</span><!--u-->', '</u>', text)
+    text = re.sub(r'</span><!--s-->', '</s>', text)
+    text = re.sub(r'<font class="m2"><img class="smiles".*"Музыка">&nbsp;', 'Музыка: ', text)
+    text = re.sub(r'<(?!/?[ius]>)(?!br>)[^<>]+>|(\n)+$|^(\n)+','',text)
+
 
     text = re.sub(r'--QUOTE--', '<blockquote style="border-left: #999999 3px solid; padding-left: 5px;"> ', text)
     text = re.sub(r'--/QUOTE--', '</blockquote>', text)
     text = re.sub(r'--IMG--', '<img src="', text)
     text = re.sub(r'--/IMG--', '">', text)
+    text = re.sub(r'--LINK--', '<a href="', text)
+    text = re.sub(r'--/LINK--', '">Ссылка</a>', text)
     text = re.sub(r'--VIDEO--', '<iframe width="420" height="345" src="', text)
     text = re.sub(r'--/VIDEO--', '"></iframe>', text)
     text = re.sub(r'(<br>){3,}', '<br><br>', text)
@@ -169,10 +177,11 @@ def moveInFile():
 
 ##MAIN
 
-import sys,re,os
+import sys,re
 f = open(sys.argv[1], 'r')
 f2 = open(sys.argv[2], 'w')
 
+datetime = ''
 doc = normalize()
 comms = findComments()  ##Don't forget! It is a list inside other list
 splitDoc()
@@ -187,7 +196,5 @@ moveInFile()
 
 f.close()
 f2.close()
-
-
 
 ## Make download pictures and audio and place for it, and html 
