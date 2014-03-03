@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 import sys,re
 f = open(sys.argv[1], 'r')
-##f2 = open(sys.argv[2], 'w')
+f2 = open(sys.argv[2], 'w')
 
 ##FUNCTIONS
 
@@ -49,9 +49,8 @@ def changeDate(date):
     return date
 
 def findText():
-    text = re.sub(r'^\s+|\s+$|<tr.*--><br><br>|</div>.*</a></font></td></tr>|.*<td colspan="." width="99%"><div class=".">', '', doc[208])
-    text = re.sub(r'<br>', '\n', text)
-    text = re.sub(r'<[/a-zA-Z0-9\\!-_=+:;@#\$%\^&\*\(\)\.,\|\s]+>','',text)
+    text = re.sub(r'^\s+|\s+$|<tr.*</a></td><td colspan="2" width="99%">|<br clear="all"><br><font class="m.">*</a></font></td></tr>|<br clear="all"><br><font class="m2">Категории:.*$', '', doc[208])
+    text = executeText(text)
     return text
 
 def findComments():    
@@ -70,8 +69,7 @@ def findComments():
             time = re.sub(r'^\s+|\s+$|<tr><td colspan=".*\sг\.\s|</font>\s<font class.*</font></td></tr>', '', comms[n1])
             nic = re.sub(r'^\s|\s$|<tr>.*e\(this\);">|</a>.*$', '',comms[n1])
             text = re.sub(r'^\s+|\s+$|<tr valign="top"><td width="1%">.*</td><td colspan="2" width="99%">|</td></tr>', '', comms[n2])
-            text = re.sub(r'<br>', '\n', text)
-            text = re.sub(r'<[/a-zA-Z0-9\\!-_=+:;@#\$%\^&\*\(\)\.,\|\s"]+>','',text)
+            text = executeText(text)
             n1 = n1 + 6
             n2 = n2 + 6
             comm = [nic, date, time, text]
@@ -79,19 +77,65 @@ def findComments():
         
         return output
 
-def showAll():
-    print "TITLE, DATE, TIME", title, date, time
-    print 'TEXT:', text
+def executeText(text):  
+   
+    if '<!-- video_end -->' in text:
+        text = re.sub(r'embed/', 'watch?v=', text)
+        text = re.sub(r'<!-- video.{,350}"><input name="video_url" type="hidden" value="|"><img class="flag" src="[\./_a-zA-Z0-9]+" alt="Скачать" height="[0-9]+" width="[0-9]+">.{,600}end -->', ' ', text) ##Проверить,заработает ли без ">. Если да, влепить <a href...></a> после вырезания тегов!
+    
+    if '<!-- quote[&gt;] -->' in text:
+        text = re.sub(r'<!-- quote\[&gt;\] -->', ' --ЦИТАТА-- ', text)     
+        text = re.sub(r'<!-- end_quote -->', ' --/ЦИТАТА-- ', text)
+        
+    text = re.sub(r'<br>', '\n', text)
+    text = re.sub(r'<i>', '[I]', text)
+    text = re.sub(r'</i>', '[/I]', text)
+
+    text = re.sub(r'<[^<>]+>','',text)
+    text = re.sub(r'&gt;', '>', text) ##Not sure may be need to cancel it
+    text = re.sub(r'&lt;', '<', text) ##Not sure may be need to cancel it
+    text = re.sub(r'&amp;', '&', text) ##Not sure may be need to cancel it
+    text = re.sub(r'\n', '<br>', text)
+    text = re.sub(r'\[I\]', '<i>', text)
+    text = re.sub(r'\[/I\]', '</i>', text)
+    text = re.sub(r'--ЦИТАТА--', '<blockquote style="border-left: #999999 3px solid; padding-left: 5px;"> ', text)
+    text = re.sub(r'--/ЦИТАТА--', '</blockquote>', text)
+
+    return text
+
+'''def showAll():
+    print title, date, time
+    print text
     
     if '<a class="tag2"' in doc[208]:
-        print 'TAGS::'
+        print '\nTAGS::'
         for tag in tags:
             print tag
 
     if output != []:
+        print "\nCOMMENTS:"
         for comm in comms:
-            print '.....' + comm[0] + ' ' + comm[1] + ' ' + comm[2] + '\n', comm[3] 
-            
+            print '.....' + comm[0] + ' ' + comm[1] + ' ' + comm[2] + '\n', comm[3] '''
+
+def moveInFile():
+
+    print >>f2, '<html> <html lang="ru"> <head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"> \n<body>'
+    print >>f2, '<b>"', title, '"',  date, time, "</b><br>"
+    print >>f2, text, "<br>"
+    
+    if '<a class="tag2"' in doc[208]:
+        print >>f2, '<br>TAGS:'
+
+        for tag in tags:
+            print >>f2, tag
+        print >>f2, "<br>"
+
+    if output != []:
+        print >>f2, "COMMENTS:"
+        for comm in comms:
+                        print >>f2, '<br><br>.....<b>', comm[0], '</b> ', comm[1], ' ', comm[2], '<br>', comm[3]
+    print >>f2, "</html></body>"
+         
 
 ##MAIN
 
@@ -105,11 +149,12 @@ date = changeDate(findDate())
 text= findText()
 tags = findTags()
 
-showAll()
+moveInFile()
 
 f.close()
-##f2.close()
+f2.close()
 
 
 ##206 -title, 207 - time, 208-text and tags 
 ##1-comm's time and name 2-comm each 6 lines repeates
+## Make download pictures and audio
