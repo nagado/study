@@ -1,8 +1,4 @@
 # -*- coding:utf-8 -*-
-import sys,re
-f = open(sys.argv[1], 'r')
-f2 = open(sys.argv[2], 'w')
-
 ##FUNCTIONS
 
 def Normalize():
@@ -55,6 +51,7 @@ def findText():
 
 def findComments():    
     trash = ''
+    output = []
     for line in doc:
         trash = trash+line
     trash = re.sub('\n', 'DIVIDER', trash)
@@ -112,10 +109,27 @@ def executeText(text):
         for tag in tags:
             print tag
 
-    if output != []:
+    if comms != []:
         print "\nCOMMENTS:"
         for comm in comms:
             print '.....' + comm[0] + ' ' + comm[1] + ' ' + comm[2] + '\n', comm[3] '''
+
+def output():
+    
+    global date
+    date = re.split('.', date)
+
+    s = r'tst'
+    if not os.path.exists(date[2]):
+        os.makedirs(date[2])
+
+    if not os.path.exists(date[1]):
+        os.makedirs(date[1])
+
+    outway = date[2] + '/' + date[1] + '/' + date[0] + '.html'
+    f2 = open(outway, 'w')
+    moveInFile()
+
 
 def moveInFile():
 
@@ -130,7 +144,7 @@ def moveInFile():
             print >>f2, tag
         print >>f2, "<br>"
 
-    if output != []:
+    if comms != []:
         print >>f2, "COMMENTS:"
         for comm in comms:
                         print >>f2, '<br><br>.....<b>', comm[0], '</b> ', comm[1], ' ', comm[2], '<br>', comm[3]
@@ -139,7 +153,10 @@ def moveInFile():
 
 ##MAIN
 
-output = []
+import sys,re,os
+f = open(sys.argv[1], 'r')
+
+
 doc = Normalize()
 comms = findComments()  ##Don't forget! It is a list inside other list
 splitDoc()
@@ -149,15 +166,12 @@ date = changeDate(findDate())
 text= findText()
 tags = findTags()
 
-moveInFile()
+output()
 
 f.close()
-f2.close()
+##f2.close()
 
 
 ##206 -title, 207 - time, 208-text and tags 
 ##1-comm's time and name 2-comm each 6 lines repeates
-<<<<<<< HEAD
 ## Make download pictures and audio
-=======
->>>>>>> 05fd228cf7f23c60435819a061e309b9bbd96e26
