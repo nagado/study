@@ -2,14 +2,14 @@
 ##FUNCTIONS
 
 def normalize():
-    global datetime
+    global dateTime
     doc = ''
     for line in f:
         doc = doc + line
     doc = doc.decode('windows-1251').encode('utf-8')
     doc = re.sub(r'\n', '<stringEnd>', doc)
-    datetime = re.search('<!-- Крошки -->.{,1000}<!--Подвал-->', doc)
-    datetime = datetime.group(0)
+    dateTime = re.search('<!-- Крошки -->.{,1000}<!--Подвал-->', doc)
+    dateTime = dateTime.group(0)
     doc = re.sub(r'^.*(?=<tr><td colspan="?3"?><h2 class="topic_title)','',doc)
     return doc
 
@@ -37,13 +37,13 @@ def findTitle():
 
 def findTime():
 
-    time = re.sub(r'<!-- Крошки -->.*\sг.\s|</span></strong>.*$', '',datetime)
+    time = re.sub(r'<!-- Крошки -->.*\sг.\s|</span></strong>.*$', '',dateTime)
 ##    time = re.sub(r'^\s+|\s+$|<tr.*г\.\s|</f.*</tr>', '', doc[1])##Check in text. Canceled
     return time
 
 def findDate():
     
-    date = re.sub(r'<!-- Крошки -->.*<span class="m2">|\s\.г\s.*$', '', datetime)
+    date = re.sub(r'<!-- Крошки -->.*<span class="m2">|\s\.г\s.*$', '', dateTime)
 ##    date = re.sub(r'^\s+|\s+$|<tr>.*<font class="..">|\sг.*</tr>', '', doc[1]) ##Check in text. Canceled
     return date
 
@@ -150,6 +150,22 @@ def executeText(text):
 
     return text
 
+def createFile():
+
+    global date
+    fold = re.split('\.', date)
+  
+    if len(fold[0]) == 1:
+        fold[0] = '0' + fold[0]
+
+    way = fold[2] + '/' + fold[1]
+    output = fold[2] + '/' + fold[1] + '/' + fold[0] + '.html'
+
+    if not os.path.exists(way):
+        os.makedirs(way)
+    
+    return output
+
 def moveInFile():
 
     print >>f2, '<html> <html lang="ru"> <head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style> \n img {max-height:600px; max-width:600px;}</style></head><body>'
@@ -177,11 +193,12 @@ def moveInFile():
 
 ##MAIN
 
-import sys,re
+import sys,re,os
 f = open(sys.argv[1], 'r')
-f2 = open(sys.argv[2], 'w')
+##f2 = open(sys.argv[2], 'w')
 
-datetime = ''
+
+dateTime = ''
 doc = normalize()
 comms = findComments()  ##Don't forget! It is a list inside other list
 splitDoc()
@@ -192,6 +209,7 @@ avatar = findAvatar()
 text= findText()
 tags = findTags()
 
+f2 = open(createFile(), 'w')
 moveInFile()
 
 f.close()
