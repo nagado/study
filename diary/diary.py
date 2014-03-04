@@ -150,23 +150,102 @@ def executeText(text):
 
     return text
 
-def createFile():
+
+def splitDateOnFolders():
 
     global date
     fold = re.split('\.', date)
   
     if len(fold[0]) == 1:
         fold[0] = '0' + fold[0]
+     
+    return fold
+
+
+def createFoulders():
 
     way = fold[2] + '/' + fold[1]
     output = fold[2] + '/' + fold[1] + '/' + fold[0] + '.html'
+    files = fold[2] + '/' + fold[1] + '/' + fold[0]
 
     if not os.path.exists(way):
         os.makedirs(way)
     
+    if not os.path.exists(files):
+        os.makedirs(files)
+
     return output
 
-def moveInFile():
+def chooseFileWay(link):
+
+    n = re.search(r'[^/]+$', link) ##Найти имя
+    name = re.split('\.', n.group(0)) ##разделить по точке
+    name[0] = 0 
+    fileway = fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(name[0]) + '.' + str(name[1])
+
+    while os.path.exists(fileway):
+        name[0] = name[0] + 1
+        fileway = fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(name[0]) + '.' + str(name[1])
+
+    return fileway
+
+def replaceLinks(link,fileway):
+  
+    global avatar, text, comms
+    fileway = re.sub(r'[0-9]{4}/[0-9]{2}/', '', fileway)
+    link = re.sub(r'\(','\(',link)
+    link = re.sub(r'\)','\)',link)
+    avatar = re.sub(link, fileway, avatar)
+    text = re.sub(link, fileway, text)
+
+    for comm in comms:
+        comm[3] = re.sub(link, fileway, comm[3])
+
+
+def moveFiles():
+
+    global avatar, text, comms
+    tmp = avatar + text
+
+    for comm in comms:
+        tmp = tmp + comm[3]
+    
+    urls = re.findall('(?<=<img src=")http://[^"]+',tmp) 
+    print urls[0] 
+    urls2 = [] 
+   
+    for url in urls:
+        if not url in urls2:
+            urls2.append(url)
+
+    for url in urls2:
+        fileway = chooseFileWay(url)
+        urllib.urlretrieve(url, fileway)
+        replaceLinks(url, fileway)
+
+     
+
+    tmp = re.sub('<img src="http://[^>]+', '', tmp) ##Cut http-s
+    links = re.findall('(?<=<img src=")[^"]+', tmp)
+    links2 = []
+    links3 = []
+
+    for link in links:
+        if not link in links2:
+            links2.append(link)           
+
+    for link in links2:
+
+        fileway = chooseFileWay(link)
+        shutil.copy(link, fileway)
+        replaceLinks(link, fileway)
+
+        
+
+## Link where way to load files from: http://www.cyberforum.ru/python/thread636359.html
+## Better go and learn selenium. It is stupid - to download all this stuff, when parts won't work, and it will be trash. Learn to open file from url, and then create html and download all you need from url, and then change file address to address of current folder, and file name with any free number. STUDY!!!!
+
+def makeFile():
 
     print >>f2, '<html> <html lang="ru"> <head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style> \n img {max-height:600px; max-width:600px;}</style></head><body>'
     print >>f2, '<b>"', title, '"',  date, time, "</b><br>"
@@ -193,7 +272,7 @@ def moveInFile():
 
 ##MAIN
 
-import sys,re,os
+import sys,re,os,shutil,urllib
 f = open(sys.argv[1], 'r')
 ##f2 = open(sys.argv[2], 'w')
 
@@ -209,8 +288,10 @@ avatar = findAvatar()
 text= findText()
 tags = findTags()
 
-f2 = open(createFile(), 'w')
-moveInFile()
+fold = splitDateOnFolders()
+f2 = open(createFoulders(), 'w')
+moveFiles()
+makeFile()
 
 f.close()
 f2.close()
