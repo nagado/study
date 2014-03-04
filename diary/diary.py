@@ -8,8 +8,7 @@ def normalize():
         doc = doc + line
     doc = doc.decode('windows-1251').encode('utf-8')
     doc = re.sub(r'\n', '<stringEnd>', doc)
-    dateTime = re.search('<!-- Крошки -->.{,1000}<!--Подвал-->', doc)
-    dateTime = dateTime.group(0)
+    dateTime = re.findall('<!-- Крошки -->.{,1000}<!--Подвал-->|<!-- Крошки -->.{,1000}<!-- Ушки -->', doc)
     doc = re.sub(r'^.*(?=<tr><td colspan="?3"?><h2 class="topic_title)','',doc)
     return doc
 
@@ -37,21 +36,24 @@ def findTitle():
 
 def findTime():
 
-    time = re.sub(r'<!-- Крошки -->.*\sг.\s|</span></strong>.*$', '',dateTime)
+    time = re.sub(r'<!-- Крошки -->.*\sг.\s|</span></strong>.*$', '',dateTime[0])
 ##    time = re.sub(r'^\s+|\s+$|<tr.*г\.\s|</f.*</tr>', '', doc[1])##Check in text. Canceled
     return time
 
 def findDate():
     
-    date = re.sub(r'<!-- Крошки -->.*<span class="m2">|\s\.г\s.*$', '', dateTime)
+    date = re.sub(r'<!-- Крошки -->.*<span class="m2">|\sг\.\s.*$', '', dateTime[0])
 ##    date = re.sub(r'^\s+|\s+$|<tr>.*<font class="..">|\sг.*</tr>', '', doc[1]) ##Check in text. Canceled
     return date
 
 def changeDate(date):
     months = {'января':'01', 'февраля':'02', 'марта':'03', 'апреля':'04', 'мая':'05', 'июня':'06', 'июля':'07', 'августа':'08', 'сентября':'09', 'октября':'10', 'ноября':'11', 'декабря':'12'}
     date = re.split(' ', date)
-
     date[1] = months[date[1]]
+
+    if len(date[0]) == 1:
+        date[0] = '0' + date[0]
+
     date = date[0]+'.'+date[1]+'.'+date[2]
     return date
 
@@ -59,17 +61,15 @@ def findAvatar():
 
     if '<img class="avatar"' in doc[2]:
         avatar = re.sub(r'^.*<img class="avatar" alt="" src="', '<img src="', doc[2])
-        avatar = re.sub(r'" onmouseover="sme.*$', '" align="left"></img>', avatar)
+        avatar = re.sub(r'" onmouseover="sme.*$|"></a></td><td colspan="2" width="99%">.*$', '" align="left"></img>', avatar)
     else:
-        avatar = '<img src="http://fotoava.ru/images/57419.jpg" height=150px; align="left"></img>'
+        avatar = '<img src="http://fotoava.ru/images/57419.jpg" height=100px; align="left"></img>'
 
     return avatar
 
 def findText():
-
-    text = re.sub(r'^\s+|\s+$|<tr.*</a></td><td colspan="2" width="99%">|<br clear="all"><br><font class="m.">*</a></font></td></tr>|<font class="m2">Категории:.*$', '', doc[2])
+    text = re.sub(r'^\s+|\s+$|<tr.*</a></td><td colspan="2" width="99%">|<br clear="all"><br><font class=".*</a></font></td></tr>|<font class="m2">Категории:.*$', '', doc[2])
     text = executeText(text)
-
     return text
 
 def findComments():    
@@ -80,6 +80,7 @@ def findComments():
         trash = trash+line
 
     if '<tr><td colspan="3"><a name=' in trash:
+        trash = re.sub(r'<!-- google_ad_section_start.{,2500}<!-- google_ad_section_end -->', '', trash)
         comms = re.search('<tbody><tr><td colspan="3"></td></tr>.*</a></td></tr><stringEnd></tbody></table>',trash)
         comms = re.split('<stringEnd>', comms.group()) 
         n1 = 1
@@ -88,11 +89,11 @@ def findComments():
         for i in range(len(comms)/6+1):
             date = changeDate(re.sub(r'^\s+|\s+$|<tr><td colspan=".*<font class="m7">|\sг\.\s.*</font></td></tr>','',comms[n1]))
             time = re.sub(r'^\s+|\s+$|<tr><td colspan=".*\sг\.\s|</font>\s<font class.*</font></td></tr>', '', comms[n1])
-            nic = re.sub(r'^\s|\s$|<tr>.*e\(this\);">|</a>.*$', '',comms[n1])
+            nic = re.sub(r'^\s|\s$|<tr><[^<>]+><[^<>]+><[^<>]+><[^<>]+>|</a>.*$', '',comms[n1])
 
             if '<img class="avatar"' in comms[n2]:
                 avatar = re.sub(r'^.*<img class="avatar" alt="" src="', '<img src="', comms[n2])
-                avatar = re.sub(r'" onmouseover="sme.*$', '" height=50px; align="left"></img>', avatar)
+                avatar = re.sub(r'" onmouseover="sme.*$|"></a></td><td colspan="." width="..%">.*$', '" height=50px; align="left"></img>', avatar)
             else:
                 avatar = '<img src="http://fotoava.ru/images/57419.jpg" height=50px; align="left"></img>'
 
@@ -138,7 +139,7 @@ def executeText(text):
     text = re.sub(r'<(?!/?[ius]>)(?!br>)[^<>]+>|(\n)+$|^(\n)+','',text)
 
 
-    text = re.sub(r'--QUOTE--', '<blockquote style="border-left: #999999 3px solid; padding-left: 5px;"> ', text)
+    text = re.sub(r'--QUOTE--', '<blockquote> ', text)
     text = re.sub(r'--/QUOTE--', '</blockquote>', text)
     text = re.sub(r'--IMG--', '<img src="', text)
     text = re.sub(r'--/IMG--', '">', text)
@@ -154,23 +155,15 @@ def executeText(text):
 def splitDateOnFolders():
 
     global date
-    fold = re.split('\.', date)
-  
-    if len(fold[0]) == 1:
-        fold[0] = '0' + fold[0]
-     
+    fold = re.split('\.', date)     
     return fold
 
 
 def createFoulders():
 
-    way = fold[2] + '/' + fold[1]
     output = fold[2] + '/' + fold[1] + '/' + fold[0] + '.html'
     files = fold[2] + '/' + fold[1] + '/' + fold[0]
-
-    if not os.path.exists(way):
-        os.makedirs(way)
-    
+           
     if not os.path.exists(files):
         os.makedirs(files)
 
@@ -211,7 +204,6 @@ def moveFiles():
         tmp = tmp + comm[3]
     
     urls = re.findall('(?<=<img src=")http://[^"]+',tmp) 
-    print urls[0] 
     urls2 = [] 
    
     for url in urls:
@@ -240,17 +232,12 @@ def moveFiles():
         shutil.copy(link, fileway)
         replaceLinks(link, fileway)
 
-        
-
-## Link where way to load files from: http://www.cyberforum.ru/python/thread636359.html
-## Better go and learn selenium. It is stupid - to download all this stuff, when parts won't work, and it will be trash. Learn to open file from url, and then create html and download all you need from url, and then change file address to address of current folder, and file name with any free number. STUDY!!!!
-
 def makeFile():
 
-    print >>f2, '<html> <html lang="ru"> <head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style> \n img {max-height:600px; max-width:600px;}</style></head><body>'
+    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\n div.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>'
     print >>f2, '<b>"', title, '"',  date, time, "</b><br>"
     print >>f2, avatar
-    print >>f2, '<div style="margin-left:100px;">', text, "<br>"
+    print >>f2, '<div class="text">', text, "<br>"
     
     if '<a class="tag2"' in doc[2]:
         print >>f2, '<br>TAGS:'
@@ -258,23 +245,22 @@ def makeFile():
         for tag in tags:
             print >>f2, tag
 
-        print >>f2, "<br>"
+        print >>f2, "<br></div>"
 
     if (comms != [])and(comms != None):
-        print >>f2, '<div style="margin-left:50px;">'
+        print >>f2, '<div class="comments">'
 
         for comm in comms:
-            print >>f2, '<div>', comm[3],  '<div style="margin-left:45px;"><hr>.....<b>', comm[0], '</b> ', comm[1], ' ', comm[2], '<br>', comm[4], '</div></div>' 
+            print >>f2,  comm[3],  '<div style="margin-left:50px;"><hr>.....<b>', comm[0], '</b> ', comm[1], ' ', comm[2], '<br>', comm[4], '</div>' 
         print >>f2, '</div>'
 
-    print >>f2, "</div></html></body>"
-         
+    print >>f2, "</html></body>"
+
 
 ##MAIN
 
 import sys,re,os,shutil,urllib
 f = open(sys.argv[1], 'r')
-##f2 = open(sys.argv[2], 'w')
 
 
 dateTime = ''
@@ -293,7 +279,9 @@ f2 = open(createFoulders(), 'w')
 moveFiles()
 makeFile()
 
+
 f.close()
 f2.close()
 
-## Make download pictures and audio and place for it, and html 
+
+## Check for file, if it exests, add your text without deleting other. Better, read it all, sort, and then return.
