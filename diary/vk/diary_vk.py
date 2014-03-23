@@ -105,8 +105,25 @@ def findQuote(el, body):
         top = title
 
         if not('видеозапись' in dateTime or 'фотография' in dateTime):
-            date = changeDate(re.sub(r'\sв.*|^\s|\s$', '', dateTime))
-            time = re.sub(r'^.*\sв\s|^\s|\s$', '', dateTime)
+
+            if 'вчера' in dateTime:
+                date = (datetime.date.today() - datetime.timedelta(days=1)).strftime("%d.%m.%Y")
+                time =  re.sub(r'.*в\s|\n', '', dateTime)
+            elif 'сегодня' in dateTime:
+                date = (datetime.date.today()).strftime("%d.%m.%Y")
+                time =  re.sub(r'.*в\s|\n', '', dateTime)
+
+            elif ' в ' in dateTime:
+                date = re.sub(r'\sв.*','',dateTime)
+                date = date + ' ' + str(datetime.date.today().year)
+                date = changeDate(re.sub('\n','',date))
+                time = re.sub(r'.*в\s|\n', '', dateTime)
+            else:
+                date = changeDate(dateTime)
+
+
+##            date = changeDate(date)
+##            time = re.sub(r'^.*\sв\s|^\s|\s$', '', dateTime)
             top = top + ' (' + date + ' ' + time + ')<br>\n'
         
         body = body + '<blockquote>' + top
@@ -137,11 +154,12 @@ def findImages(el, body):
 def findAudio(el, body):
 
     if '<div class="title_wrap fl_l"' in el:
-        audios = re.findall('<div class="title_wrap fl_l".*', el)
+        audios = re.findall('<input type="hidden" id=".*\n.*\n.*', el)
         body = body + '<div class="audio">'
         for audio in audios:
-            audio = re.sub(r'<[^<>]*>', '', audio)
-            body = body + audio + '<br>\n'
+            link = re.compile(r'^.*value="(?=http://)|(?<=.mp3).*',re.DOTALL).sub('',audio)
+            audio = re.compile(r'^.*(?=<div class="title_wrap fl_l")|<[^<>]*>', re.DOTALL).sub('', audio)
+            body = body + audio + '<br>\n<audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio>' + '<br>\n'
 
         body = body + '</div><br>\n'
 
@@ -155,8 +173,8 @@ def findVideo(el, body):
         for video in videos:
             video = re.split(r'\n', video)
             link = (re.findall(r'http://vk.com/video.[0-9]*_[0-9]*', video[0]))[0]
-            link = (re.findall(r'(?<=<img src=")[^"]+', video[0]))[0]
-            image = moveFile(link)
+            image = (re.findall(r'(?<=<img src=")[^"]+', video[0]))[0]
+            image = moveFile(image)
             title = re.sub(r'^.*<span class="a post_video_title">|</span>.*', '', video[2])
             assembly = '<a href="' + link + '"> "' + title + '" <br>\n<img src="' + image + '"></img></a><br>\n'
             body = body + assembly
@@ -170,7 +188,6 @@ def downloadFile(url):
     fileway = chooseFileWay(url)
     print "Downloading picture for day:", re.sub(r'_[0-9]*|/[0-9]\..*', '', fileway)
     urllib.urlretrieve(url, fileway)
-    print "Done"
     fileway = re.sub(r'[0-9]*/[0-9]*/', '', fileway)
     return fileway
 
@@ -206,7 +223,19 @@ def findDateAndTime(post,body):
     DT = etree.tostring(DT[0], pretty_print=True, encoding='utf-8')
     DT = re.sub(r'<[^<>]*>', '', DT)
 
-    if ' в ' in DT:
+    if 'вчера' in DT:
+        date = (datetime.date.today() - datetime.timedelta(days=1)).strftime("%d.%m.%Y")
+        makeWay(date)
+        time =  re.sub(r'.*в\s|\n', '', DT)
+        body = body + '<b>' + date + ' ' + time + '</b><br>'
+
+    elif 'сегодня' in DT:
+        date = (datetime.date.today()).strftime("%d.%m.%Y")
+        makeWay(date)
+        time =  re.sub(r'.*в\s|\n', '', DT)
+        body = body + '<b>' + date + ' ' + time + '</b><br>'
+
+    elif ' в ' in DT:
         date = re.sub(r'\sв.*','',DT)
         date = date + ' ' + str(datetime.date.today().year)
         date = changeDate(re.sub('\n','',date))
@@ -224,16 +253,17 @@ def changeDate(date):
 
     months = {'янв':'01', 'фев':'02', 'мар':'03', 'апр':'04', 'мая':'05', 'июн':'06', 'июл':'07', 'авг':'08', 'сен':'09', 'окт':'10', 'ноя':'11', 'дек':'12'}
     date = re.split(r'\s', date)
-    date[1] = months[date[1]]
-    if len(date[0]) == 1:
-        date[0] = '0' + date[0]
+    
+    if date[1] in months:
+        date[1] = months[date[1]]
+        if len(date[0]) == 1:
+            date[0] = '0' + date[0]
 
     date = date[0]+'.'+date[1]+'.'+date[2]
     return date
 
 def makeWay(date):
 
-    
     fold = re.split('\.', date)     
     output = fold[2] + '/' + fold[1] + '/' + fold[0] + '.html'
     way = fold[2] + '/' + fold[1]
@@ -254,7 +284,7 @@ def makeWay(date):
 
 def createPost(body):
 
-    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\n div.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n' + '<div class="text">' + body + '</html></body>'
+    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\n div.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n' + body + '</html></body>'
     f2.close()
 
 
@@ -268,5 +298,4 @@ for post in posts:
     
 
 f.close()
-##f2.close()
-
+##Time zone, comments

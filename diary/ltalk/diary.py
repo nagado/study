@@ -162,10 +162,14 @@ def splitDateOnFolders():
 def createFoulders():
 
     output = fold[2] + '/' + fold[1] + '/' + fold[0] + '.html'
-    files = fold[2] + '/' + fold[1] + '/' + fold[0]
+    number = 1
+
+    while os.path.exists(output):
+        number = number + 1
+        output = fold[2] + '/' + fold[1] + '/' + fold[0] + '_'+ str(number) + '.html'
            
-    if not os.path.exists(files):
-        os.makedirs(files)
+    if not os.path.exists(re.sub(r'.html','',output)):
+        os.makedirs(re.sub(r'.html','',output))
 
     return output
 
@@ -174,11 +178,12 @@ def chooseFileWay(link):
     n = re.search(r'[^/]+$', link) ##Найти имя
     name = re.split('\.', n.group(0)) ##разделить по точке
     name[0] = 0 
-    fileway = fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(name[0]) + '.' + str(name[1])
+    folderway = re.sub(r'.html','',postway)
+    fileway = folderway + '/' + str(name[0]) + '.' + str(name[1])
 
     while os.path.exists(fileway):
         name[0] = name[0] + 1
-        fileway = fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(name[0]) + '.' + str(name[1])
+        fileway = folderway + '/' + str(name[0]) + '.' + str(name[1])
 
     return fileway
 
@@ -200,8 +205,9 @@ def moveFiles():
     global avatar, text, comms
     tmp = avatar + text
 
-    for comm in comms:
-        tmp = tmp + comm[3]
+    if (comms != [])and(comms != None):
+        for comm in comms:
+            tmp = tmp + comm[3]
     
     urls = re.findall('(?<=<img src=")http://[^"]+',tmp) 
     urls2 = [] 
@@ -275,7 +281,8 @@ text= findText()
 tags = findTags()
 
 fold = splitDateOnFolders()
-f2 = open(createFoulders(), 'w')
+postway = createFoulders()
+f2 = open(postway, 'w')
 moveFiles()
 makeFile()
 
