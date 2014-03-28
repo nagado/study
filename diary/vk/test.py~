@@ -1,0 +1,4 @@
+d = {'word':'36'}
+m = ['word','two']
+print d(m[0])
+
