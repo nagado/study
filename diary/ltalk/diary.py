@@ -27,6 +27,7 @@ def findTags():
             tag = re.sub(r'<a.*">|</a.*>|^\s+|\s+$', '', tag)
             tags.append(tag)
         
+
         return tags
 
 def findTitle():
@@ -161,12 +162,12 @@ def splitDateOnFolders():
 
 def createFoulders():
 
-    output = fold[2] + '/' + fold[1] + '/' + fold[0] + '.html'
     number = 1
+    output = fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(number) + '.html'
 
     while os.path.exists(output):
         number = number + 1
-        output = fold[2] + '/' + fold[1] + '/' + fold[0] + '_'+ str(number) + '.html'
+        output = fold[2] + '/' + fold[1] + '/' + fold[0] + '/'+ str(number) + '.html'
            
     if not os.path.exists(re.sub(r'.html','',output)):
         os.makedirs(re.sub(r'.html','',output))
@@ -190,14 +191,15 @@ def chooseFileWay(link):
 def replaceLinks(link,fileway):
   
     global avatar, text, comms
-    fileway = re.sub(r'[0-9]{4}/[0-9]{2}/', '', fileway)
+    fileway = re.sub(r'[0-9]{4}/[0-9]{2}/[0-9]{2}/', '', fileway)
     link = re.sub(r'\(','\(',link)
     link = re.sub(r'\)','\)',link)
     avatar = re.sub(link, fileway, avatar)
     text = re.sub(link, fileway, text)
 
-    for comm in comms:
-        comm[3] = re.sub(link, fileway, comm[3])
+    if (comms != [])and(comms != None):
+        for comm in comms:
+            comm[3] = re.sub(link, fileway, comm[3])
 
 
 def moveFiles():
