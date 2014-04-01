@@ -1,4 +1,9 @@
 # -*- coding:utf-8 -*-
+
+import sys,re,os,shutil,urllib,datetime
+f = open(sys.argv[1], 'r')
+
+
 ##FUNCTIONS
 
 def normalize():
@@ -37,14 +42,12 @@ def findTitle():
 
 def findTime():
 
-    time = re.sub(r'<!-- Крошки -->.*\sг.\s|</span></strong>.*$', '',dateTime[0])
-##    time = re.sub(r'^\s+|\s+$|<tr.*г\.\s|</f.*</tr>', '', doc[1])##Check in text. Canceled
+    time = re.sub(r'<!-- Крошки -->.*\sг.\s|</span></strong>.*$|(?<=[0-9]{2}:[0-9]{2}):[0-9]{2}', '',dateTime[0])
     return time
 
 def findDate():
     
     date = re.sub(r'<!-- Крошки -->.*<span class="m2">|\sг\.\s.*$', '', dateTime[0])
-##    date = re.sub(r'^\s+|\s+$|<tr>.*<font class="..">|\sг.*</tr>', '', doc[1]) ##Check in text. Canceled
     return date
 
 def changeDate(date):
@@ -57,6 +60,54 @@ def changeDate(date):
 
     date = date[0]+'.'+date[1]+'.'+date[2]
     return date
+
+def findDT(DT):
+    
+    DT = makeDate(DT)
+    changeDays = findChangeDays(DT.year)
+    if (datetime.datetime.now()>findChangeDays(datetime.datetime.now().year)[0])and(datetime.datetime.now()<findChangeDays(datetime.datetime.now().year)[1]):
+        msc = DT + datetime.timedelta(hours=8)
+
+        if (DT<=changeDays[0])or(DT>=changeDays[1]):  
+            DT = DT - datetime.timedelta(hours=1)         
+    else:
+        msc = DT + datetime.timedelta(hours=9)
+
+        if (DT>changeDays[0])and(DT<changeDays[1]):  
+            DT = DT + datetime.timedelta(hours=1)
+    DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
+    msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
+    twoDT = [DT,msc]
+    return twoDT
+          
+
+
+def findChangeDays(year):
+  
+    fallDay = datetime.datetime(year,11,1)
+    
+    while fallDay.isoweekday() != 7:
+        fallDay = fallDay + datetime.timedelta(days=1)   
+
+    springDay = datetime.datetime(year,3,8)
+
+    while springDay.isoweekday() != 7:
+        springDay = springDay + datetime.timedelta(days=1)
+
+    changeDays = [springDay,fallDay]
+    return changeDays
+
+def makeDate(DT): 
+
+    if DT[1] != '':
+        date = re.split(r'\.',DT[0])
+        time = re.split(r':',DT[1])
+        DT = datetime.datetime(int(date[2]), int(date[1]), int(date[0]), int(time[0]), int(time[1]))       
+    else:        
+        date = re.split(r'\.',DT[0])
+        DT = datetime.datetime(int(date[2]), int(date[1]), int(date[0]))   
+
+    return DT
 
 def findAvatar():
 
@@ -89,7 +140,12 @@ def findComments():
 
         for i in range(len(comms)/6+1):
             date = changeDate(re.sub(r'^\s+|\s+$|<tr><td colspan=".*<font class="m7">|\sг\.\s.*</font></td></tr>','',comms[n1]))
-            time = re.sub(r'^\s+|\s+$|<tr><td colspan=".*\sг\.\s|</font>\s<font class.*</font></td></tr>', '', comms[n1])
+            time = re.sub(r'^\s+|\s+$|<tr><td colspan=".*\sг\.\s|</font>\s<font class.*</font></td></tr>|(?<=[0-9]{2}:[0-9]{2}):[0-9]{2}', '', comms[n1])
+            DT = [date,time]
+            DTs = findDT(DT)
+            date = (DTs[0])[0]
+            time = (DTs[0])[1]
+            msc = DTs[1]
             nic = re.sub(r'^\s|\s$|<tr><[^<>]+><[^<>]+><[^<>]+><[^<>]+>|</a>.*$', '',comms[n1])
 
             if '<img class="avatar"' in comms[n2]:
@@ -103,7 +159,7 @@ def findComments():
             n1 = n1 + 6
             n2 = n2 + 6
 
-            comm = [nic, date, time, avatar, text]
+            comm = [nic, date, time, avatar, text, msc[0], msc[1]]
             output.append(comm)
         
         return output
@@ -163,11 +219,11 @@ def splitDateOnFolders():
 def createFoulders():
 
     number = 1
-    output = fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(number) + '.html'
+    output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(number) + '.html'
 
     while os.path.exists(output):
         number = number + 1
-        output = fold[2] + '/' + fold[1] + '/' + fold[0] + '/'+ str(number) + '.html'
+        output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/'+ str(number) + '.html'
            
     if not os.path.exists(re.sub(r'.html','',output)):
         os.makedirs(re.sub(r'.html','',output))
@@ -176,8 +232,8 @@ def createFoulders():
 
 def chooseFileWay(link):
 
-    n = re.search(r'[^/]+$', link) ##Найти имя
-    name = re.split('\.', n.group(0)) ##разделить по точке
+    n = re.search(r'[^/]+$', link) 
+    name = re.split('\.', n.group(0))
     name[0] = 0 
     folderway = re.sub(r'.html','',postway)
     fileway = folderway + '/' + str(name[0]) + '.' + str(name[1])
@@ -191,7 +247,7 @@ def chooseFileWay(link):
 def replaceLinks(link,fileway):
   
     global avatar, text, comms
-    fileway = re.sub(r'[0-9]{4}/[0-9]{2}/[0-9]{2}/', '', fileway)
+    fileway = re.sub(r'Diary/[0-9]{4}/[0-9]{2}/[0-9]{2}/', '', fileway)
     link = re.sub(r'\(','\(',link)
     link = re.sub(r'\)','\)',link)
     avatar = re.sub(link, fileway, avatar)
@@ -225,7 +281,7 @@ def moveFiles():
 
      
 
-    tmp = re.sub('<img src="http://[^>]+', '', tmp) ##Cut http-s
+    tmp = re.sub('<img src="http://[^>]+', '', tmp)
     links = re.findall('(?<=<img src=")[^"]+', tmp)
     links2 = []
     links3 = []
@@ -243,7 +299,7 @@ def moveFiles():
 def makeFile():
 
     print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\n div.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>'
-    print >>f2, '<b>"', title, '"',  date, time, "</b><br>"
+    print >>f2, '<b>"', title, '"',  date, time, " (", msc[0], " ", msc[1], "  по Москве) </b><br>"
     print >>f2, avatar
     print >>f2, '<div class="text">', text, "<br>"
     
@@ -259,25 +315,44 @@ def makeFile():
         print >>f2, '<div class="comments">'
 
         for comm in comms:
-            print >>f2,  comm[3],  '<div style="margin-left:50px;"><hr>.....<b>', comm[0], '</b> ', comm[1], ' ', comm[2], '<br>', comm[4], '</div>' 
+            print >>f2,  comm[3],  '<div style="margin-left:50px;"><hr>.....<b>', comm[0], '</b> ', comm[1], ' ', comm[2], ' (', comm[5], ' ' , comm[6], ' по Москве) <br>', comm[4], '</div>' 
         print >>f2, '</div>'
 
     print >>f2, "</html></body>"
 
+def removeExstras():
+
+    folderway = re.sub('(?<=Diary/[0-9]{4}/[0-9]{2}/[0-9]{2}).*', '', postway)
+    dirs = os.listdir(re.sub(r'/[0-9]*\.html','',postway))
+    dirs2 = []
+    for direct in dirs:
+        if '.html' in direct:
+            if direct != re.sub(r'^.*/', '', postway):
+                dirs2.append(direct)
+
+    for direct in dirs2:
+        if os.path.exists(postway):
+            if re.sub(r'img src="[^"]*"', '', open(postway,'r').read()) == re.sub(r'img src="[^"]*"', '', open(folderway + '/' + direct,'r').read()):
+                os.remove(postway)
+                shutil.rmtree(re.sub(r'\.html','',postway), ignore_errors=False, onerror=None)
+
+
 
 ##MAIN
-
-import sys,re,os,shutil,urllib
-f = open(sys.argv[1], 'r')
 
 
 dateTime = ''
 doc = normalize()
-comms = findComments()  ##Don't forget! It is a list inside other list
+comms = findComments() 
 splitDoc()
 title = findTitle()
 time = findTime()
 date = changeDate(findDate())
+DT = [date,time]
+DTs = findDT(DT)
+date = (DTs[0])[0]
+time = (DTs[0])[1]
+msc = DTs[1]
 avatar = findAvatar()
 text= findText()
 tags = findTags()
@@ -288,9 +363,6 @@ f2 = open(postway, 'w')
 moveFiles()
 makeFile()
 
-
 f.close()
 f2.close()
-
-
-## Check for file, if it exests, add your text without deleting other. Better, read it all, sort, and then return.
+removeExstras()

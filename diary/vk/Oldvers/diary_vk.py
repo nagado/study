@@ -23,28 +23,30 @@ def normalize():
 def findPosts():
  
     global doc
+    posts = []  
+    divids = re.findall('<div id="post-[0-9]*_[0-9]*" class="post all own"', doc)    
     doc = re.split('\n',doc)
-    posts = []
+    
+    for divid in divids:
 
-    for i in range(len(doc)):
+        for i in range(len(doc)):
 
-        if '<div id="post-' in doc[i]:
-            post = re.sub(r'^.*(?=<div id="post-)', '', doc[i]) + '\n'
-            divs = 0
-            i =  i + 1
-            post = post + doc[i]
-            divs = divs + len(re.findall('<div', doc[i])) - len(re.findall('</div>', doc[i]))
-            i =  i + 1
-            post = post + doc[i]
-            divs = divs + len(re.findall('<div', doc[i])) - len(re.findall('</div>', doc[i]))
-            
-            while (divs != 1):
-                 
-                post = post + doc[i] + '\n'
+            if divid in doc[i]:
+                post = re.sub(r'^.*(?=<div id="post-)', '', doc[i]) + '\n'
+                divs = 0
+                i =  i + 1
+                post = post + doc[i]
                 divs = divs + len(re.findall('<div', doc[i])) - len(re.findall('</div>', doc[i]))
-                i = i + 1
-   
-            posts.append(post)
+                i =  i + 1
+                post = post + doc[i]
+                divs = divs + len(re.findall('<div', doc[i])) - len(re.findall('</div>', doc[i]))
+            
+                while (divs != 1):
+                    post = post + doc[i] + '\n'
+                    divs = divs + len(re.findall('<div', doc[i])) - len(re.findall('</div>', doc[i]))
+                    i = i + 1
+
+                posts.append(post)
 
     return posts
 
@@ -85,6 +87,9 @@ def makeComments(post,body):
             DT = re.findall(r'<a class="wd_lnk".*', comm)
             DT = re.sub(r'</span>.*|<[^<>]*>','',DT[0])
             DT = translateDate(DT)
+            DTs = findDT(DT)
+            DT = DTs[0]
+            msc = DTs[1]
             avatar = re.findall(r'(?<=<img src=")[^"]*(?=" width="50" height="50" class="reply_image"/>)',comm)
 
             if avatar[0] in avatars:
@@ -110,7 +115,7 @@ def makeComments(post,body):
             text = findImages(comm,text)
             text = findAudio(comm,text)
             text = findVideo(comm,text)
-            comment = ava + '<div style="margin-left:50px;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + '<br>' + text + '</div><br>'
+            comment = ava + '<div style="margin-left:50px;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + ' (' + msc[0] + ' ' + msc[1] + ' по Москве)' + '<br>' + text + '</div><br>'
             body = body + comment
   
         body = body + '</div>'
@@ -195,13 +200,9 @@ def findQuote(el, body):
             else:
                 date = changeDate(dateTime)
 
-
-##            date = changeDate(date)
-##            time = re.sub(r'^.*\sв\s|^\s|\s$', '', dateTime)
             top = top + ' (' + date + ' ' + time + ')<br>\n'
         
         body = body + '<blockquote>' + top
-##        print repost[0]
         body = findText(repost[0],body)
         body = body + '</blockquote><br>\n'
 
@@ -261,16 +262,16 @@ def findVideo(el, body):
 def downloadFile(url):
 
     fileway = chooseFileWay(url)
-    print "Downloading picture for day:", re.sub(r'_[0-9]*|/[0-9]\..*', '', fileway)
+    print "Downloading picture for post by date", re.sub(r'Diary/|/[0-9]*/[0-9]*\.jpg', '', fileway)
     urllib.urlretrieve(url, fileway)
-    fileway = re.sub(r'[0-9]{4}/[0-9]{2}/[0-9]{2}/', '', fileway)
+    fileway = re.sub(r'Diary/[0-9]{4}/[0-9]{2}/[0-9]{2}/', '', fileway)
     return fileway
 
 def moveFile(link):
 
     fileway = chooseFileWay(link)
     shutil.copy(link, fileway)
-    fileway = re.sub(r'[0-9]{4}/[0-9]{2}/[0-9]{2}/', '', fileway)
+    fileway = re.sub(r'Diary/[0-9]{4}/[0-9]{2}/[0-9]{2}/', '', fileway)
     return fileway
 
 def chooseFileWay(link):
@@ -296,12 +297,15 @@ def findDateAndTime(post,body):
     DT = post.xpath("//div[@class='reply_link_wrap sm']")
 
     if '<span class="rel_date' in etree.tostring(DT[0], pretty_print=True, encoding='utf-8'):
-        DT = DT[0].xpath("//span[@class='rel_date']")
+        DT = DT[0].xpath("//span[@class='rel_date'] | //span[@class='rel_date rel_date_needs_update']")
         DT = etree.tostring(DT[0], pretty_print=True, encoding='utf-8')
         DT = re.sub(r'<[^<>]*>|\n', '', DT)
         DT = translateDate(DT)
+        DTs = findDT(DT)
+        DT = DTs[0]
+        msc = DTs[1]
         makeWay(DT[0])
-        body = body + '<b>' + DT[0] + ' ' + DT[1] + '</b><br>'
+        body = body + '<b>' + DT[0] + ' ' + DT[1] + ' (' + msc[0] + ' ' + msc[1] + ' по Москве) </b><br>'
 
     return body
 
@@ -356,28 +360,91 @@ def changeDate(date):
     date = date[0]+'.'+date[1]+'.'+date[2]
     return date
 
+def findDT(DT):
+    
+    DT = makeDate(DT)
+    changeDays = findChangeDays(DT.year)
+    if (datetime.datetime.now()>findChangeDays(datetime.datetime.now().year)[0])and(datetime.datetime.now()<findChangeDays(datetime.datetime.now().year)[1]):
+        msc = DT + datetime.timedelta(hours=8)
+
+        if (DT<=changeDays[0])or(DT>=changeDays[1]):  
+            DT = DT - datetime.timedelta(hours=1)         
+    else:
+        msc = DT + datetime.timedelta(hours=9)
+
+        if (DT>changeDays[0])and(DT<changeDays[1]):  
+            DT = DT + datetime.timedelta(hours=1)
+    DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
+    msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
+    twoDT = [DT,msc]
+    return twoDT
+          
+
+
+def findChangeDays(year):
+  
+    fallDay = datetime.datetime(year,11,1)
+    
+    while fallDay.isoweekday() != 7:
+        fallDay = fallDay + datetime.timedelta(days=1)   
+
+    springDay = datetime.datetime(year,3,8)
+
+    while springDay.isoweekday() != 7:
+        springDay = springDay + datetime.timedelta(days=1)
+
+    changeDays = [springDay,fallDay]
+    return changeDays
+
+def makeDate(DT): 
+
+    if DT[1] != '':
+        date = re.split(r'\.',DT[0])
+        time = re.split(r':',DT[1])
+        DT = datetime.datetime(int(date[2]), int(date[1]), int(date[0]), int(time[0]), int(time[1]))       
+    else:        
+        date = re.split(r'\.',DT[0])
+        DT = datetime.datetime(int(date[2]), int(date[1]), int(date[0]))   
+
+    return DT
+
 def makeWay(date):
 
     fold = re.split('\.', date)     
     number = 1
-    output = fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(number) + '.html'
+    output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(number) + '.html'
 
     while os.path.exists(output):
         number = number + 1
-        output = fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(number) + '.html'
+        output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(number) + '.html'
 
-    if not os.path.exists(re.sub('/[0-9]*.html', '', output)):
-        os.makedirs(re.sub('/[0-9]*.html', '', output))
+    if not os.path.exists(re.sub('.html', '', output)):
+        os.makedirs(re.sub('.html', '', output))
+        
 
     global f2
     global fway
     fway = re.sub('.html','',output)
-    f2 = open(output, 'w')
 
 def createPost(body):
 
-    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\n div.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n' + body + '</html></body>'
-    f2.close()
+    body = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\n div.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n' + body + '</html></body>'
+    folderway = re.sub('(?<=Diary/[0-9]{4}/[0-9]{2}/[0-9]{2}).*', '', fway) 
+    f2 = open(fway + '.html', 'w')
+    print >>f2, body
+    f2.close()  
+    dirs = os.listdir(folderway)
+    dirs2 = []
+    for direct in dirs:
+        if '.html' in direct:
+            if direct != (re.sub(r'^.*/','',fway) + '.html'):
+                dirs2.append(direct)
+
+    for direct in dirs2:
+        if os.path.exists(fway + '.html'):
+            if re.sub(r'img src="[^"]*"', '', open(fway + '.html','r').read()) == re.sub(r'img src="[^"]*"', '', open(folderway + '/' + direct,'r').read()):
+                os.remove(fway + '.html')
+                shutil.rmtree(fway, ignore_errors=False, onerror=None)
 
 
 ##MAIN:
@@ -392,4 +459,4 @@ for post in posts:
     
 
 f.close()
-##Time zone, comments
+##сделать аватарку и отступ для ВК
