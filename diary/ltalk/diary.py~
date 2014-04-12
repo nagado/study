@@ -115,7 +115,7 @@ def findAvatar():
         avatar = re.sub(r'^.*<img class="avatar" alt="" src="', '<img src="', doc[2])
         avatar = re.sub(r'" onmouseover="sme.*$|"></a></td><td colspan="2" width="99%">.*$', '" align="left"></img>', avatar)
     else:
-        avatar = '<img src="http://fotoava.ru/images/57419.jpg" height=100px; align="left"></img>'
+        avatar = '<img src="../../../.extras/ava.jpg" height=100px; align="left"></img>'
 
     return avatar
 
@@ -152,7 +152,7 @@ def findComments():
                 avatar = re.sub(r'^.*<img class="avatar" alt="" src="', '<img src="', comms[n2])
                 avatar = re.sub(r'" onmouseover="sme.*$|"></a></td><td colspan="." width="..%">.*$', '" height=50px; align="left"></img>', avatar)
             else:
-                avatar = '<img src="http://fotoava.ru/images/57419.jpg" height=50px; align="left"></img>'
+                avatar = '<img src="../../../.extras/ava.jpg" height=50px; align="left"></img>'
 
             text = re.sub(r'^\s+|\s+$|<tr valign="top"><td width="1%">.*</td><td colspan="2" width="99%">|</td></tr>', '', comms[n2])
             text = executeText(text)
@@ -219,11 +219,12 @@ def splitDateOnFolders():
 def createFoulders():
 
     number = 1
-    output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + str(number) + '.html'
+    output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + re.sub(':', '_', time) + '_' + str(number) + '.html'
+    print output 
 
     while os.path.exists(output):
         number = number + 1
-        output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/'+ str(number) + '.html'
+        output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + re.sub(':', '_', time) + '_' + str(number) + '.html'
            
     if not os.path.exists(re.sub(r'.html','',output)):
         os.makedirs(re.sub(r'.html','',output))
@@ -271,7 +272,7 @@ def moveFiles():
     urls2 = [] 
    
     for url in urls:
-        if not url in urls2:
+        if (not url in urls2) and (not '..' in url):
             urls2.append(url)
 
     for url in urls2:
@@ -287,7 +288,7 @@ def moveFiles():
     links3 = []
 
     for link in links:
-        if not link in links2:
+        if (not link in links2) and (not '..' in link):
             links2.append(link)           
 
     for link in links2:
@@ -323,7 +324,7 @@ def makeFile():
 def removeExstras():
 
     folderway = re.sub('(?<=Diary/[0-9]{4}/[0-9]{2}/[0-9]{2}).*', '', postway)
-    dirs = os.listdir(re.sub(r'/[0-9]*\.html','',postway))
+    dirs = os.listdir(re.sub(r'/[0-9_]*\.html','',postway))
     dirs2 = []
     for direct in dirs:
         if '.html' in direct:
@@ -332,19 +333,23 @@ def removeExstras():
 
     for direct in dirs2:
         if os.path.exists(postway):
-##            print (r'img src="[^"]*"', '', open(folderway + '/' + direct,'r').read())
-            if re.sub(r'img src="[^"]*"', '', open(postway,'r').read()) == re.sub(r'img src="[^"]*"', '', open(folderway + '/' + direct,'r').read()):
-                print "remove"
+            if re.sub(r'<[^<>]*>', '', open(postway,'r').read()) == re.sub(r'<[^<>]*>', '', open(folderway + '/' + direct,'r').read()):
                 os.remove(postway)
                 shutil.rmtree(re.sub(r'\.html','',postway), ignore_errors=False, onerror=None)
 
-
+def loadExtras():
+    if not os.path.exists("Diary/.extras"):
+        os.makedirs("Diary/.extras")
+    if not os.path.exists("Diary/.extras/ava.jpg"):
+        urllib.urlretrieve("http://cs5298.userapi.com/g32561651/a_ea42f7ac.jpg", "Diary/.extras/ava.jpg")
+        
 
 ##MAIN
 
 
 dateTime = ''
 doc = normalize()
+loadExtras()
 comms = findComments() 
 splitDoc()
 title = findTitle()
