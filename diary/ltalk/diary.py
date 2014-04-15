@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 
-import sys,re,os,shutil,urllib,datetime,sqlite3,filecmp
+import sys,re,os,shutil,urllib,datetime,sqlite3,filecmp,lxml.html
+from lxml import etree
 f = open(sys.argv[1], 'r')
 
 
@@ -9,20 +10,24 @@ f = open(sys.argv[1], 'r')
 def normalize():
     global dateTime
     doc = ''
+
     for line in f:
         doc = doc + line
+
     doc = doc.decode('windows-1251').encode('utf-8')
     doc = re.sub(r'\n', '<stringEnd>', doc)
     dateTime = re.findall('<!-- Крошки -->.{,1000}<!--Подвал-->|<!-- Крошки -->.{,1000}<!-- Ушки -->', doc)
     doc = re.sub(r'^.*(?=<tr><td colspan="?3"?><h2 class="topic_title)','',doc)
+
     return doc
+
 
 def splitDoc():
     global doc
     doc = re.split('<stringEnd>', doc)
 
-def findTags():
 
+def findTags():
     if '<a class="tag2"' in doc[2]:
         rawtags = re.search('<a class="tag2".*</a>', doc[2])
         rawtags = re.split(',', rawtags.group())
@@ -32,23 +37,26 @@ def findTags():
             tag = re.sub(r'<a.*">|</a.*>|^\s+|\s+$', '', tag)
             tags.append(tag)
         
-
         return tags
 
-def findTitle():
 
+def findTitle():
     title = re.sub(r'^\s+|\s+$|<tr.*">|</h.*</tr>', "", doc[0])
+
     return title
 
-def findTime():
 
+def findTime():
     time = re.sub(r'<!-- Крошки -->.*\sг.\s|</span></strong>.*$|(?<=[0-9]{2}:[0-9]{2}):[0-9]{2}', '',dateTime[0])
+
     return time
 
+
 def findDate():
-    
     date = re.sub(r'<!-- Крошки -->.*<span class="m2">|\sг\.\s.*$', '', dateTime[0])
+
     return date
+
 
 def changeDate(date):
     months = {'января':'01', 'февраля':'02', 'марта':'03', 'апреля':'04', 'мая':'05', 'июня':'06', 'июля':'07', 'августа':'08', 'сентября':'09', 'октября':'10', 'ноября':'11', 'декабря':'12'}
@@ -59,7 +67,9 @@ def changeDate(date):
         date[0] = '0' + date[0]
 
     date = date[0]+'.'+date[1]+'.'+date[2]
+
     return date
+
 
 def findDT(DT):
     
@@ -78,9 +88,9 @@ def findDT(DT):
     DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
     msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
     twoDT = [DT,msc]
+
     return twoDT
           
-
 
 def findChangeDays(year):
   
@@ -95,7 +105,9 @@ def findChangeDays(year):
         springDay = springDay + datetime.timedelta(days=1)
 
     changeDays = [springDay,fallDay]
+
     return changeDays
+
 
 def makeDate(DT): 
 
@@ -109,20 +121,24 @@ def makeDate(DT):
 
     return DT
 
+
 def findAvatar():
 
     if '<img class="avatar"' in doc[2]:
         avatar = re.sub(r'^.*<img class="avatar" alt="" src="', '<img src="', doc[2])
         avatar = re.sub(r'" onmouseover="sme.*$|"></a></td><td colspan="2" width="99%">.*$', '" align="left"></img>', avatar)
     else:
-        avatar = '<img src="../../../.extras/Media/ava.jpg" height=100px; align="left"></img>'
+        avatar = '<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>'
 
     return avatar
+
 
 def findText():
     text = re.sub(r'^\s+|\s+$|<tr.*</a></td><td colspan="2" width="99%">|<br clear="all"><br><font class=".*</a></font></td></tr>|<font class="m2">Категории:.*$', '', doc[2])
     text = executeText(text)
+
     return text
+
 
 def findComments():    
     trash = ''
@@ -152,7 +168,7 @@ def findComments():
                 avatar = re.sub(r'^.*<img class="avatar" alt="" src="', '<img src="', comms[n2])
                 avatar = re.sub(r'" onmouseover="sme.*$|"></a></td><td colspan="." width="..%">.*$', '" height=50px; align="left"></img>', avatar)
             else:
-                avatar = '<img src="../../../.extras/Media/ava.jpg" height=50px; align="left"></img>'
+                avatar = '<img src="../../.extras/Media/ava.jpg" height=50px; align="left"></img>'
 
             text = re.sub(r'^\s+|\s+$|<tr valign="top"><td width="1%">.*</td><td colspan="2" width="99%">|</td></tr>', '', comms[n2])
             text = executeText(text)
@@ -163,6 +179,7 @@ def findComments():
             output.append(comm)
         
         return output
+
 
 def executeText(text):  
 
@@ -212,42 +229,38 @@ def executeText(text):
 def splitDateOnFolders():
 
     global date
-    fold = re.split('\.', date)     
+    fold = re.split('\.', date) 
+    
     return fold
 
 
 def createFoulders():
-
-    number = 1
-    output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + re.sub(':', '_', time) + '_' + str(number) + '.html'
-
-    while os.path.exists(output):
-        number = number + 1
-        output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + re.sub(':', '_', time) + '_' + str(number) + '.html'
-           
+    output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '.html'
     if not os.path.exists(re.sub(r'[^/]*.html','',output)):
         os.makedirs(re.sub(r'[^/]*.html','',output))
 
     return output
+
 
 def chooseFileWay(link):
 
     n = re.search(r'[^/]+$', link) 
     name = re.split('\.', n.group(0))
     name[0] = 0 
-    folderway = "Diary/.extras/Media"
-    fileway = folderway + '/' + str(name[0]) + '.' + str(name[1])
+    folderway = "Diary/.extras/Media/"
+    fileway = folderway + str(name[0]) + '.' + str(name[1])
 
     while os.path.exists(fileway):
         name[0] = name[0] + 1
-        fileway = folderway + '/' + str(name[0]) + '.' + str(name[1])
+        fileway = folderway + str(name[0]) + '.' + str(name[1])
 
     return fileway
+
 
 def replaceLinks(link,fileway):
   
     global avatar, text, comms
-    fileway = "../../.." + re.sub("Diary", '', fileway)
+    fileway = "../.." + re.sub("Diary", '', fileway)
     link = re.sub(r'\(','\(',link)
     link = re.sub(r'\)','\)',link)
     avatar = re.sub(link, fileway, avatar)
@@ -299,53 +312,43 @@ def moveFiles():
         else:
             replaceLinks(link, doubling)
 
-def makeFile():
 
-    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body><div class="post">'
-    print >>f2, '<b>"',title,'"',date,'<div class="time">',time,"</div> (",msc[0]," ",msc[1],"  по Москве) </b><br>"
-    print >>f2, avatar
-    print >>f2, '<div class="text">', text, "<br>"
-    
+def makeBody():
+    body = '<b>"' + title + '" ' + date + ' <div class="time"> ' + time + " </div> (" + msc[0] + " " + msc[1] + "  по Москве) </b><br>\n" + avatar + '\n<div class="text">' + text + "<br>\n"
     if '<a class="tag2"' in doc[2]:
-        print >>f2, '<br>TAGS:'
+        body = body + '<br>TAGS:'
 
         for tag in tags:
-            print >>f2, tag
+            body = body + " " + tag + ','
 
-        print >>f2, "<br></div>"
+        body = body + "<br></div>\n"
 
     if (comms != [])and(comms != None):
-        print >>f2, '<div class="comments">'
+        body = body + '<div class="comments">'
 
         for comm in comms:
-            print >>f2,  comm[3],  '<div style="margin-left:50px;"><hr>.....<b>', comm[0], '</b> ', comm[1], ' ', comm[2], ' (', comm[5], ' ' , comm[6], ' по Москве) <br>', comm[4], '</div>' 
-        print >>f2, '</div>'
+            body = body + comm[3] + '<div style="margin-left:50px;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + ' (' + comm[5] + ' ' + comm[6] + ' по Москве) <br>' + comm[4] + '</div>\n' 
+        body = body + '</div>'
 
-    print >>f2, "</div></html></body>"
+    body = body + "</div>"
 
-def removeExstras():
+    return body
 
-    folderway = re.sub('(?<=Diary/[0-9]{4}/[0-9]{2}/[0-9]{2}).*', '', postway)
-    dirs = os.listdir(re.sub(r'/[0-9_]*\.html','',postway))
-    dirs2 = []
-    for direct in dirs:
-        if '.html' in direct:
-            if direct != re.sub(r'^.*/', '', postway):
-                dirs2.append(direct)
 
-    for direct in dirs2:
-        if os.path.exists(postway):
-            if re.sub(r'<[^<>]*>', '', open(postway,'r').read()) == re.sub(r'<[^<>]*>', '', open(folderway + '/' + direct,'r').read()):
-                os.remove(postway)
-                shutil.rmtree(re.sub(r'\.html','',postway), ignore_errors=False, onerror=None)
+def makeFile():
+    f2 = open(postway,'w')
+    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:50px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n<div class="post">', body, "</div></html></body>"
+    f2.close()
+
 
 def checkForDoubles(link):
     images = os.listdir("Diary/.extras/Media")
     doubling = "N"
     for image in images:
         if filecmp.cmp(link, "Diary/.extras/Media/" + image):
-            doubling = "Diary/.extrs/Media/" + image
+            doubling = "Diary/.extras/Media/" + image
     return doubling
+
 
 def loadExtras():
     if not os.path.exists("Diary/.extras/Media"):
@@ -359,6 +362,38 @@ def loadExtras():
         
 def addTag(tag): ##!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 '''
+
+def executeFile():
+    global body
+    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:50px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n'
+    maintime = re.split(':',time)
+    maintime = datetime.time(int(maintime[0]),int(maintime[1]))
+    f2 = open(postway, 'r')
+    pst = f2.read()
+    f2.close()
+    pstt = lxml.html.fromstring(pst) 
+    posts = pstt.xpath("//div[@class='post']")  
+    if not body in pst:
+        
+        for post in posts:
+            postTime = post.xpath("//div[@class='time']")
+            postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8')
+            postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
+            postTime = re.split(':',postTime)
+            postTime = datetime.time(int(postTime[0]),int(postTime[1]))
+            if maintime > postTime:
+                newFile = newFile + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
+            else:
+                newFile = newFile + body + '\n<br>' + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
+                body = ''
+
+        if not body == '':
+            newFile = newFile + body
+
+        f2 = open(postway, 'w')
+        print >>f2, newFile, '</html></body>'
+
+
 ##MAIN
 
 
@@ -381,11 +416,14 @@ tags = findTags()
 
 fold = splitDateOnFolders()
 postway = createFoulders()
-f2 = open(postway, 'w')
 moveFiles()
-makeFile()
+body = makeBody()
+if os.path.exists(postway):
+    executeFile()
+else:
+    makeFile()
 
 f.close()
-f2.close()
-removeExstras()
+##f2.close()
+##removeExstras()
 ##Сделать, чтобы работало с файлами из других директорий. Записи без точного времени(для вк) указать время как un. Сделать файлы в одном месте и для ВК 
