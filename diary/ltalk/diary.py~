@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 
-import sys,re,os,shutil,urllib,datetime
+import sys,re,os,shutil,urllib,datetime,sqlite3,filecmp
 f = open(sys.argv[1], 'r')
 
 
@@ -115,7 +115,7 @@ def findAvatar():
         avatar = re.sub(r'^.*<img class="avatar" alt="" src="', '<img src="', doc[2])
         avatar = re.sub(r'" onmouseover="sme.*$|"></a></td><td colspan="2" width="99%">.*$', '" align="left"></img>', avatar)
     else:
-        avatar = '<img src="../../../.extras/ava.jpg" height=100px; align="left"></img>'
+        avatar = '<img src="../../../.extras/Media/ava.jpg" height=100px; align="left"></img>'
 
     return avatar
 
@@ -152,7 +152,7 @@ def findComments():
                 avatar = re.sub(r'^.*<img class="avatar" alt="" src="', '<img src="', comms[n2])
                 avatar = re.sub(r'" onmouseover="sme.*$|"></a></td><td colspan="." width="..%">.*$', '" height=50px; align="left"></img>', avatar)
             else:
-                avatar = '<img src="../../../.extras/ava.jpg" height=50px; align="left"></img>'
+                avatar = '<img src="../../../.extras/Media/ava.jpg" height=50px; align="left"></img>'
 
             text = re.sub(r'^\s+|\s+$|<tr valign="top"><td width="1%">.*</td><td colspan="2" width="99%">|</td></tr>', '', comms[n2])
             text = executeText(text)
@@ -220,14 +220,13 @@ def createFoulders():
 
     number = 1
     output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + re.sub(':', '_', time) + '_' + str(number) + '.html'
-    print output 
 
     while os.path.exists(output):
         number = number + 1
         output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + re.sub(':', '_', time) + '_' + str(number) + '.html'
            
-    if not os.path.exists(re.sub(r'.html','',output)):
-        os.makedirs(re.sub(r'.html','',output))
+    if not os.path.exists(re.sub(r'[^/]*.html','',output)):
+        os.makedirs(re.sub(r'[^/]*.html','',output))
 
     return output
 
@@ -236,7 +235,7 @@ def chooseFileWay(link):
     n = re.search(r'[^/]+$', link) 
     name = re.split('\.', n.group(0))
     name[0] = 0 
-    folderway = re.sub(r'.html','',postway)
+    folderway = "Diary/.extras/Media"
     fileway = folderway + '/' + str(name[0]) + '.' + str(name[1])
 
     while os.path.exists(fileway):
@@ -248,7 +247,7 @@ def chooseFileWay(link):
 def replaceLinks(link,fileway):
   
     global avatar, text, comms
-    fileway = re.sub(r'Diary/[0-9]{4}/[0-9]{2}/[0-9]{2}/', '', fileway)
+    fileway = "../../.." + re.sub("Diary", '', fileway)
     link = re.sub(r'\(','\(',link)
     link = re.sub(r'\)','\)',link)
     avatar = re.sub(link, fileway, avatar)
@@ -292,15 +291,18 @@ def moveFiles():
             links2.append(link)           
 
     for link in links2:
-
-        fileway = chooseFileWay(link)
-        shutil.copy(link, fileway)
-        replaceLinks(link, fileway)
+        doubling = checkForDoubles(link)
+        if doubling == "N":
+            fileway = chooseFileWay(link)
+            shutil.copy(link, fileway)
+            replaceLinks(link, fileway)
+        else:
+            replaceLinks(link, doubling)
 
 def makeFile():
 
     print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\n div.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>'
-    print >>f2, '<b>"', title, '"',  date, time, " (", msc[0], " ", msc[1], "  по Москве) </b><br>"
+    print >>f2, '<b>"', title, '"<div class="time">', date, time, "</div> (", msc[0], " ", msc[1], "  по Москве) </b><br>"
     print >>f2, avatar
     print >>f2, '<div class="text">', text, "<br>"
     
@@ -337,13 +339,26 @@ def removeExstras():
                 os.remove(postway)
                 shutil.rmtree(re.sub(r'\.html','',postway), ignore_errors=False, onerror=None)
 
-def loadExtras():
-    if not os.path.exists("Diary/.extras"):
-        os.makedirs("Diary/.extras")
-    if not os.path.exists("Diary/.extras/ava.jpg"):
-        urllib.urlretrieve("http://cs5298.userapi.com/g32561651/a_ea42f7ac.jpg", "Diary/.extras/ava.jpg")
-        
+def checkForDoubles(link):
+    images = os.listdir("Diary/.extras/Media")
+    doubling = "N"
+    for image in images:
+        if filecmp.cmp(link, "Diary/.extras/Media/" + image):
+            doubling = "Diary/.extrs/Media/" + image
+    return doubling
 
+def loadExtras():
+    if not os.path.exists("Diary/.extras/Media"):
+        os.makedirs("Diary/.extras/Media")
+    if not os.path.exists("Diary/.extras/Media/ava.jpg"):
+        urllib.urlretrieve("http://cs5298.userapi.com/g32561651/a_ea42f7ac.jpg", "Diary/.extras/Media/ava.jpg")
+'''    if not os.path.exists("Diary/.exstras/tags.db")
+        db = sqlite3.connect('Diary/.exstras/tags.db')
+        cur = db.cursor() ##!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+        
+        
+def addTag(tag): ##!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+'''
 ##MAIN
 
 
@@ -373,3 +388,4 @@ makeFile()
 f.close()
 f2.close()
 removeExstras()
+##Сделать, чтобы работало с файлами из других директорий. Записи без точного времени(для вк) указать время как un. Сделать файлы в одном месте и для ВК 
