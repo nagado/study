@@ -444,7 +444,7 @@ def makeWay(DT):
 
 def createPost(body):
 
-    body = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:50px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n' + body + '</div></html></body>'
+    body = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:50px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n<div class="post">' + body + '</div></div></html></body>'
     folderway = re.sub(r'(?<=Diary/[0-9]{4}/[0-9]{2}/[0-9]{2}).*', '', fway) 
     f2 = open(fway + '.html', 'w')
     print >>f2, body
@@ -483,7 +483,7 @@ for post in posts:
     
 
 f.close()
-##Все записи в один день. Время в диве.
+##Все записи в один день.
 ##Название - время. - взят из ЛТ Если времени нет - переменную, проверку и название united[num]. Что делать с совпадениями во времени?
 ##Теги. Докачиваемая таблица или файл для каждого тега? 
 ##Селениум. Пока его нет, сделать версию для скачанных файлов (ориентир по дате обновления). Пометить, чтобы изменить потом обратно.

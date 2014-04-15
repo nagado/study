@@ -301,7 +301,7 @@ def moveFiles():
 
 def makeFile():
 
-    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>'
+    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body><div class="post">'
     print >>f2, '<b>"',title,'"',date,'<div class="time">',time,"</div> (",msc[0]," ",msc[1],"  по Москве) </b><br>"
     print >>f2, avatar
     print >>f2, '<div class="text">', text, "<br>"
@@ -321,7 +321,7 @@ def makeFile():
             print >>f2,  comm[3],  '<div style="margin-left:50px;"><hr>.....<b>', comm[0], '</b> ', comm[1], ' ', comm[2], ' (', comm[5], ' ' , comm[6], ' по Москве) <br>', comm[4], '</div>' 
         print >>f2, '</div>'
 
-    print >>f2, "</html></body>"
+    print >>f2, "</div></html></body>"
 
 def removeExstras():
 
