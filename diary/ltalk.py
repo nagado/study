@@ -381,14 +381,14 @@ def executeFile():
             postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
             postTime = re.split(':',postTime)
             postTime = datetime.time(int(postTime[0]),int(postTime[1]))
-            if maintime >= postTime:
+            if maintime > postTime:
                 newFile = newFile + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
             else:
                 newFile = newFile + body + '\n<br>' + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
                 body = ''
 
         if not body == '':
-            newFile = newFile + body
+            newFile = newFile + body + '\n<br>'
 
         f2 = open(postway, 'w')
         print >>f2, newFile, '</html></body>'
