@@ -11,17 +11,17 @@ fway = ''
 
 
 def normalize():
-
     doc = ''
 
     for line in f:
         doc = doc + line
 
     doc = doc.decode('windows-1251')
+
     return doc
 
+
 def findPosts():
- 
     global doc
     posts = []  
     divids = re.findall('<div id="post-[0-9]*_[0-9]*" class="post all own"', doc)    
@@ -50,8 +50,8 @@ def findPosts():
 
     return posts
 
-def takePost(post):
 
+def takePost(post):
     post = lxml.html.fromstring(post) 
    
     textbody = post.xpath("//div[@class='post_info']")
@@ -76,7 +76,6 @@ def takePost(post):
 
 
 def makeComments(post,body):
-
     if "reply reply_dived clear  reply_replieable" in etree.tostring(post, pretty_print=True, encoding='utf-8'):
         avatars = {}
         comms = post.xpath("//div[@class='reply reply_dived clear  reply_replieable']")
@@ -124,6 +123,7 @@ def makeComments(post,body):
 
     return body
 
+
 def findText(text,body):
     tags = ''
     body = body + '<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">'
@@ -161,8 +161,8 @@ def findText(text,body):
 
     return body
 
-def changeLinksInText(text):
 
+def changeLinksInText(text):
     links2 = []
     if  '<a href="' in text:
         links = re.findall(r'(?<=<a href="http://vk.com/away.php\?to=)h[^"]*',text)
@@ -173,12 +173,10 @@ def changeLinksInText(text):
             link = '<a href="' + link + '">Ссылка</a><br>'
             links2.append(link)
     
-    return links2
-            
+    return links2    
 
 
 def findQuote(el, body):        
-
     if '<a class="published_by_photo"' in el:
         repost = re.findall(r'<a class="published_by_photo".*', el, re.DOTALL)
         title = re.findall(r'<a class="published_by".*', repost[0])
@@ -210,11 +208,10 @@ def findQuote(el, body):
         body = findText(repost[0],body)
         body = body + '</blockquote><br>\n'
 
-
     return body
      
+
 def findImages(el, body):
-    
     if '<div class="page_post_queue_narrow"><div class="page_post_sized_thumbs' in el:
         links = re.compile(r'^.*(?=<div class="page_post_queue_narrow"><div class="page_post_sized_thumbs  clear_fix" style="width:)', re.DOTALL).sub('', el)
 
@@ -230,8 +227,8 @@ def findImages(el, body):
  
     return body
 
-def findAudio(el, body):
 
+def findAudio(el, body):
     if '<div class="title_wrap fl_l"' in el:
         audios = re.findall('<input type="hidden" id=".*\n.*\n.*', el)
         body = body + '<div class="audio">'
@@ -244,8 +241,8 @@ def findAudio(el, body):
 
     return body
     
-def findVideo(el, body):
 
+def findVideo(el, body):
     if '<a href="http://vk.com/video' in el:
         body = body + '<div class="video">Video:<br>\n'
         videos = re.findall('<div class="page_post_queue_narrow"><div class="page_post_sized.*\n.*\n.*', el)
@@ -263,6 +260,7 @@ def findVideo(el, body):
 
     return body
 
+
 def checkForDoubles(link):
     images = os.listdir("Diary/.extras/Media")
     doubling = "N"
@@ -272,6 +270,7 @@ def checkForDoubles(link):
             doubling = "Diary/.extras/Media/" + image
 
     return doubling
+
 
 def downloadFile(url):
     fileway = chooseFileWay(url)
@@ -294,8 +293,8 @@ def moveFile(link):
 
     return fileway
 
-def chooseFileWay(link):
 
+def chooseFileWay(link):
     n = re.search(r'[^/]+$', link) ##Найти имя
     name = re.split('\.', n.group(0)) ##разделить по точке
     name[0] = 0 
@@ -307,8 +306,8 @@ def chooseFileWay(link):
    
     return fileway
 
-def findDateAndTime(post,body):
 
+def findDateAndTime(post,body):
     DT = post.xpath("//div[@class='reply_link_wrap sm']")
     global newPostTime
     newPostTime = ''
@@ -326,7 +325,9 @@ def findDateAndTime(post,body):
             body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве) </b><br>'
         else:
             body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве)</b>\n<sup>Время не было указано, может быть неточность не более, чем в +24часа</sup><br>'
+
     return body
+
 
 def translateDate(DT):
     global k
@@ -365,23 +366,23 @@ def translateDate(DT):
         time = ''
         k = "not accurate"
     DT = [date, time] 
+
     return DT
 
-def changeDate(date):
 
+def changeDate(date):
     months = {'янв':'01', 'фев':'02', 'мар':'03', 'апр':'04', 'мая':'05', 'июн':'06', 'июл':'07', 'авг':'08', 'сен':'09', 'окт':'10', 'ноя':'11', 'дек':'12'}
     date = re.split(r'\s', date)
-    
     if date[1] in months:
         date[1] = months[date[1]]
         if len(date[0]) == 1:
             date[0] = '0' + date[0]
-
     date = date[0]+'.'+date[1]+'.'+date[2]
+
     return date
 
+
 def findDT(DT):
-    
     DT = makeDate(DT)
     changeDays = findChangeDays(DT.year)
     if (datetime.datetime.now()>findChangeDays(datetime.datetime.now().year)[0])and(datetime.datetime.now()<findChangeDays(datetime.datetime.now().year)[1]):
@@ -397,12 +398,11 @@ def findDT(DT):
     DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
     msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
     twoDT = [DT,msc]
+
     return twoDT
           
 
-
 def findChangeDays(year):
-  
     fallDay = datetime.datetime(year,11,1)
     
     while fallDay.isoweekday() != 7:
@@ -414,10 +414,11 @@ def findChangeDays(year):
         springDay = springDay + datetime.timedelta(days=1)
 
     changeDays = [springDay,fallDay]
+
     return changeDays
 
-def makeDate(DT): 
 
+def makeDate(DT): 
     if DT[1] != '':
         date = re.split(r'\.',DT[0])
         time = re.split(r':',DT[1])
@@ -428,8 +429,8 @@ def makeDate(DT):
 
     return DT
 
-def makeWay(DT):
 
+def makeWay(DT):
     fold = re.split('\.', DT[0])     
     output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '.html'
     if not os.path.exists(re.sub('[^/]*.html', '', output)):
@@ -440,9 +441,7 @@ def makeWay(DT):
     fway = re.sub('.html','',output)
 
 
-
 def createPost(body):
-
     newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:100px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n' 
     if os.path.exists(fway + '.html'):
         f2 = open(fway + '.html', 'r')
@@ -478,19 +477,6 @@ def createPost(body):
         print >>f2, newFile
         f2.close()  
 
-
-'''    dirs = os.listdir(folderway)
-    dirs2 = []
-    for direct in dirs:
-        if '.html' in direct:
-            if direct != (re.sub(r'^.*/','',fway) + '.html'):
-                dirs2.append(direct)
-
-    for direct in dirs2:
-        if os.path.exists(fway + '.html'):
-            if re.sub(r'<[^<>]*>', '', open(fway + '.html','r').read()) == re.sub(r'<[^<>]*>', '', open(folderway + '/' + direct,'r').read()):
-                os.remove(fway + '.html')
-                shutil.rmtree(re.sub(r"[_0-9]*$",'',fway), ignore_errors=False, onerror=None)'''
 
 def loadExtras():
     if not os.path.exists("Diary/.extras/Media"):
