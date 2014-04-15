@@ -67,9 +67,11 @@ def takePost(post):
             body = findQuote(el, body)
             body = findImages(el,body)
             body = findVideo(el, body)
-            body = findAudio(el, body)
+            body = findAudio(el, body)   
+            body = body + '</div>'
 
         body = makeComments(fullpost,body)
+        body = '<div class="post">' + body + '</div>\n'
         createPost(body)
 
 
@@ -78,7 +80,7 @@ def makeComments(post,body):
     if "reply reply_dived clear  reply_replieable" in etree.tostring(post, pretty_print=True, encoding='utf-8'):
         avatars = {}
         comms = post.xpath("//div[@class='reply reply_dived clear  reply_replieable']")
-        body = body + '<br><div class="comments">'
+        body = body + '<div class="comments">'
         for comm in comms:
             comm =  etree.tostring(comm, pretty_print=True, encoding='utf-8')
             comment = ''
@@ -115,7 +117,7 @@ def makeComments(post,body):
             text = findImages(comm,text)
             text = findAudio(comm,text)
             text = findVideo(comm,text)
-            comment = ava + '<div style="margin-left:50px;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + ' (' + msc[0] + ' ' + msc[1] + ' по Москве)' + '<br>' + text + '</div><br>'
+            comment = '<div class="comm">' + ava + '<div style="margin-left:50px;display:inline;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + ' (' + msc[0] + ' ' + msc[1] + ' по Москве)' + '<br>' + text + '</div></div>\n'
             body = body + comment
   
         body = body + '</div>'
@@ -123,8 +125,8 @@ def makeComments(post,body):
     return body
 
 def findText(text,body):
-
-    body = body + '<img src="../../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">'
+    tags = ''
+    body = body + '<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">'
 
     if '<div class="wall_post_text">' in text:
         text = re.sub('<br/>', '\n', text)
@@ -275,7 +277,7 @@ def downloadFile(url):
     fileway = chooseFileWay(url)
     print "Downloading picture for post by date", re.sub(r'Diary/|/[0-9]*/[0-9]*\.jpg', '', fway)
     urllib.urlretrieve(url, fileway)
-    fileway = re.sub(r'Diary/.extras/Media/', '../../../.extras/Media/', fileway)
+    fileway = re.sub(r'Diary/.extras/Media/', '../../.extras/Media/', fileway)
 
     return fileway
 
@@ -288,7 +290,7 @@ def moveFile(link):
     else:
         fileway = doubling
 
-    fileway = re.sub(r'Diary/.extras/Media/', '../../../.extras/Media/', fileway)
+    fileway = re.sub(r'Diary/.extras/Media/', '../../.extras/Media/', fileway)
 
     return fileway
 
@@ -308,7 +310,8 @@ def chooseFileWay(link):
 def findDateAndTime(post,body):
 
     DT = post.xpath("//div[@class='reply_link_wrap sm']")
-
+    global newPostTime
+    newPostTime = ''
     if '<span class="rel_date' in etree.tostring(DT[0], pretty_print=True, encoding='utf-8'):
         DT = DT[0].xpath("//span[@class='rel_date'] | //span[@class='rel_date rel_date_needs_update']")
         DT = etree.tostring(DT[0], pretty_print=True, encoding='utf-8')
@@ -318,10 +321,11 @@ def findDateAndTime(post,body):
         DT = DTs[0]
         msc = DTs[1]
         makeWay(DT)
+        newPostTime = DT[1]
         if not k == "not accurate":
             body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве) </b><br>'
         else:
-            body = body + '<b>' + DT[0] + ' ' + DT[1] + ' (' + msc[0] + ' ' + msc[1] + ' по Москве)</b>\n<sup>Время не было указано, может быть неточность не более, чем в +24часа</sup><br>'
+            body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве)</b>\n<sup>Время не было указано, может быть неточность не более, чем в +24часа</sup><br>'
     return body
 
 def translateDate(DT):
@@ -427,30 +431,55 @@ def makeDate(DT):
 def makeWay(DT):
 
     fold = re.split('\.', DT[0])     
-    number = 1
-    output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + re.sub(':', '_', DT[1]) + '_' + str(number) + '.html'
-
-    while os.path.exists(output):
-        number = number + 1
-        output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '/' + re.sub(':', '_', DT[1]) + '_' + str(number) + '.html'
-
+    output = 'Diary/' + fold[2] + '/' + fold[1] + '/' + fold[0] + '.html'
     if not os.path.exists(re.sub('[^/]*.html', '', output)):
         os.makedirs(re.sub('[^/]*.html', '', output))
         
-
     global f2
     global fway
     fway = re.sub('.html','',output)
 
+
+
 def createPost(body):
 
-    body = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:50px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n<div class="post">' + body + '</div></div></html></body>'
-    folderway = re.sub(r'(?<=Diary/[0-9]{4}/[0-9]{2}/[0-9]{2}).*', '', fway) 
-    f2 = open(fway + '.html', 'w')
-    print >>f2, body
-    f2.close()  
+    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:100px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n' 
+    if os.path.exists(fway + '.html'):
+        f2 = open(fway + '.html', 'r')
+        pst = f2.read()
+        f2.close()
+        maintime = re.split(':',newPostTime)
+        maintime = datetime.time(int(maintime[0]),int(maintime[1]))
+        if not body in pst:
+            pstt = lxml.html.fromstring(pst) 
+            posts = pstt.xpath("//div[@class='post']")   
+     
+            for post in posts:
+                postTime = post.xpath("//div[@class='time']")
+                postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8')
+                postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
+                postTime = re.split(':',postTime)
+                postTime = datetime.time(int(postTime[0]),int(postTime[1]))
+                if maintime >= postTime:
+                    newFile = newFile + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
+                else:
+                    newFile = newFile + body + '\n<br>' + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
+                    body = ''
 
-    dirs = os.listdir(folderway)
+            if not body == '':
+                newFile = newFile + body
+
+            f2 = open(fway + '.html', 'w')
+            print >>f2, newFile, '</html></body>'
+            f2.close() 
+    else:
+        f2 = open(fway + '.html', 'w')
+        newFile = newFile + body + '</body></html>'
+        print >>f2, newFile
+        f2.close()  
+
+
+'''    dirs = os.listdir(folderway)
     dirs2 = []
     for direct in dirs:
         if '.html' in direct:
@@ -461,7 +490,7 @@ def createPost(body):
         if os.path.exists(fway + '.html'):
             if re.sub(r'<[^<>]*>', '', open(fway + '.html','r').read()) == re.sub(r'<[^<>]*>', '', open(folderway + '/' + direct,'r').read()):
                 os.remove(fway + '.html')
-                shutil.rmtree(re.sub(r"[_0-9]*$",'',fway), ignore_errors=False, onerror=None)
+                shutil.rmtree(re.sub(r"[_0-9]*$",'',fway), ignore_errors=False, onerror=None)'''
 
 def loadExtras():
     if not os.path.exists("Diary/.extras/Media"):
@@ -477,6 +506,7 @@ doc = normalize()
 posts = findPosts()
 loadExtras()
 k = ''
+newPostTime = ''
 
 for post in posts:
     takePost(post)

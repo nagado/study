@@ -314,7 +314,7 @@ def moveFiles():
 
 
 def makeBody():
-    body = '<b>"' + title + '" ' + date + ' <div class="time"> ' + time + " </div> (" + msc[0] + " " + msc[1] + "  по Москве) </b><br>\n" + avatar + '\n<div class="text">' + text + "<br>\n"
+    body = '<div class="post"><b>"' + title + '" ' + date + ' <div class="time"> ' + time + " </div> (" + msc[0] + " " + msc[1] + "  по Москве) </b><br>\n" + avatar + '\n<div class="text">' + text + "<br>\n"
     if '<a class="tag2"' in doc[2]:
         body = body + '<br>TAGS:'
 
@@ -327,7 +327,7 @@ def makeBody():
         body = body + '<div class="comments">'
 
         for comm in comms:
-            body = body + comm[3] + '<div style="margin-left:50px;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + ' (' + comm[5] + ' ' + comm[6] + ' по Москве) <br>' + comm[4] + '</div>\n' 
+            body = body + '<div class="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + ' (' + comm[5] + ' ' + comm[6] + ' по Москве)' + comm[4] + '</div></div>\n' 
         body = body + '</div>'
 
     body = body + "</div>"
@@ -337,7 +337,7 @@ def makeBody():
 
 def makeFile():
     f2 = open(postway,'w')
-    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:50px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n<div class="post">', body, "</div></html></body>"
+    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n', body, "</html></body>"
     f2.close()
 
 
@@ -365,23 +365,23 @@ def addTag(tag): ##!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 def executeFile():
     global body
-    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:50px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n'
+    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n'
     maintime = re.split(':',time)
     maintime = datetime.time(int(maintime[0]),int(maintime[1]))
     f2 = open(postway, 'r')
     pst = f2.read()
     f2.close()
-    pstt = lxml.html.fromstring(pst) 
-    posts = pstt.xpath("//div[@class='post']")  
     if not body in pst:
-        
+        pstt = lxml.html.fromstring(pst) 
+        posts = pstt.xpath("//div[@class='post']") 
+
         for post in posts:
             postTime = post.xpath("//div[@class='time']")
             postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8')
             postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
             postTime = re.split(':',postTime)
             postTime = datetime.time(int(postTime[0]),int(postTime[1]))
-            if maintime > postTime:
+            if maintime >= postTime:
                 newFile = newFile + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
             else:
                 newFile = newFile + body + '\n<br>' + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
@@ -392,7 +392,7 @@ def executeFile():
 
         f2 = open(postway, 'w')
         print >>f2, newFile, '</html></body>'
-
+        f2.close()
 
 ##MAIN
 
