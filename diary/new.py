@@ -2,8 +2,16 @@
 import re, datetime, os, urllib, lxml.html
 from lxml import etree
 
-def findDT():
-    DT = datetime.datetime.now()
+def findDT(time):
+    if time == '':
+        DT = datetime.datetime.now()
+    else:
+        date = (re.split(' ', time)[0])
+        date = re.split('\.', date)
+        time = (re.split(' ', time)[1])
+        time = re.split(':', time)
+        DT = datetime.datetime(int(date[2]),int(date[1]),int(date[0]),int(time[0]),int(time[1]))
+        
     makeWay(str(DT.strftime("%d.%m.%Y")))
     changeDays = findChangeDays(DT.year)
     if (datetime.datetime.now()>findChangeDays(datetime.datetime.now().year)[0])and(datetime.datetime.now()<findChangeDays(datetime.datetime.now().year)[1]):
@@ -36,19 +44,55 @@ def findChangeDays(year):
     return changeDays
 
 
+def takeTime():
+    ask = ''
+    
+    while ask != 'Y' and ask != 'y': 
+        time = askTime()
+
+        while re.sub(r'[0123][0-9].[01][0-9].[0-9]{4} [012345][0-9]:[012345][0-9]', '', time) != '':
+            print "You have print something wrong. Try again"
+            time = askTime()
+    
+        if time == '':
+            ask = raw_input("You had chose default system time. Are you sure?(Y/N)")
+        else:
+            ask = raw_input("Are you sure that time " + time + " is right?(Y/N)")
+        if (ask != 'Y')or(ask != 'y'):
+            print "Try again"
+
+    return time
+
+
+def askTime():
+    time = raw_input("Do you want to set time of your record (If not, it will be just system time)?(Y/N): ")
+    if (time == "Y")or(time == "y"):
+        time = raw_input('Set your time in format dd.mm.yyyy hh:mm (time in 24-hour format) or press "N" for default time: ')
+        if (time == "N")or(time == "n"):
+            time = ''
+    if (time == "N")or(time == "n"):
+        time = ''
+
+    return time
+
+
 def takePost():
-    global text,tags
+    global text,tags,time
+    time = takeTime()
     text = raw_input("Print text of your record. If you want to make paragraph, use <br>. Also use all tags, that needed for text\n")
     tags = raw_input("Print tags, use comma to divide it\nTAGS: ")
     tags = re.sub(r'\s{2,}', '\s', tags)
     tags = re.sub(r'^\s|\s$|(?<=,)\s|\s(?=,)', '', tags)
     tags = re.split(",", tags) ##Tags. Don't forget to make them lowercase for sqlite3!
+     
+    
+        
 
 
 
 def makePost():
     global time
-    twoDT = findDT()
+    twoDT = findDT(time)
     DT = twoDT[0]
     time = DT[1] 
     msc = twoDT[1]
@@ -120,7 +164,6 @@ def loadExtras():
 text = ''
 tags = ''
 fway = ''
-time = ''
 takePost()
 loadExtras()
 body = makePost()
