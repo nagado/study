@@ -80,7 +80,7 @@ def askTime():
 def takePost():
     global text,tags,time
     time = takeTime()
-    text = raw_input("Print text of your record. If you want to make paragraph, use <br>. Also use all tags, that needed for text\n")
+    text = raw_input("Print text of your record. If you want to make paragraph, use <br/>. Also use all tags, that needed for text\n")
     tags = raw_input("Print tags, use comma to divide it\nTAGS: ").lower()
     tags = re.sub(r'\s{2,}', '\s', tags)
     tags = re.sub(r'^\s|\s$|(?<=,)\s|\s(?=,)', '', tags)
@@ -93,7 +93,7 @@ def makePost():
     DT = twoDT[0]
     time = DT[1] 
     msc = twoDT[1]
-    body = '<div class="post"><b>' + DT[0] + ' <div class="time"> ' + DT[1] + " </div> (" + msc[0] + ' ' + msc[1] + ' по Москве)</b><br>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">' + text + "<br>\n"
+    body = '<div class="post"><b>' + DT[0] + ' <div class="time"> ' + DT[1] + " </div> (" + msc[0] + ' ' + msc[1] + ' по Москве)</b><br/>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">' + text + "<br/>\n"
     if not tags == '' and not tags == None:
         body = body + "TAGS: "
         for tag in tags:
@@ -156,6 +156,7 @@ def addDayInDB():
 
     return idDay
 
+
 def addConnections(idTags,idDay):
     db = sqlite3.connect("Diary/.extras/test.db")
     cur = db.cursor()
@@ -165,7 +166,7 @@ def addConnections(idTags,idDay):
 
         for idTag in idTags:
             cur.execute('SELECT idTag, idWay FROM connections WHERE idTag = "' + idTag + '" AND idWay = "' + idDay + '";')
-            if not cur.fetchall() == '':
+            if cur.fetchall() == []:
                 cur.execute('INSERT INTO connections (idTag,idWay) VALUES("' + idTag + '","' + idDay+ '");')
 
     cur.close()
@@ -174,12 +175,12 @@ def addConnections(idTags,idDay):
 
 def createFile():
     global body
-    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:100px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n'
+    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:110px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n'
     if os.path.exists(fway):
         f2 = open(fway, 'r')
         pst = f2.read()
         f2.close()
-        if not body in pst:
+        if not (re.sub(r'<[^<>]*>|\s*|\\n*', '',body)) in (re.sub(r'<[^<>]*>|\s*|\\n*', '',pst)):
             maintime = re.split(':',time)
             maintime = datetime.time(int(maintime[0]),int(maintime[1]))
             pstt = lxml.html.fromstring(pst) 
@@ -192,13 +193,13 @@ def createFile():
                 postTime = re.split(':',postTime)
                 postTime = datetime.time(int(postTime[0]),int(postTime[1]))
                 if maintime >= postTime:
-                    newFile = newFile + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
+                    newFile = newFile + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br/>'
                 else:
-                    newFile = newFile + body + '\n<br>' + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
+                    newFile = newFile + body + '\n<br/>' + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br/>'
                     body = ''
 
             if not body == '':
-                newFile = newFile + body + '\n<br>'
+                newFile = newFile + body + '\n<br/>'
 
             f2 = open(fway, 'w')
             print >>f2, newFile, '</html></body>'
@@ -223,8 +224,20 @@ fway = ''
 loadExtras()
 takePost()
 body = makePost()
-addConnections(addTagsInDB(tags),addDayInDB())
+if not tags == ['']:
+    addConnections(addTagsInDB(tags),addDayInDB())
+
+db = sqlite3.connect("Diary/.extras/test.db")
+cur = db.cursor()
+cur.execute('SELECT * FROM tags;')
+print cur.fetchall()
+cur.execute('SELECT * FROM ways;')
+print cur.fetchall()
+cur.execute('SELECT * FROM connections;')
+print cur.fetchall()
+cur.close()
+
 createFile()
 
 
-##Если картинка или видео, или аудо, добавлять соответствующий тег. Сделать работу с базой для вк и лт.сделать lowercase
+##Если картинка или видео, или аудио, добавлять соответствующий тег. Проверка существования файла при создании

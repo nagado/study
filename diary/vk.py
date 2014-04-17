@@ -18,7 +18,7 @@ def normalize():
 def findPosts():
     global doc
     posts = []  
-    divids = re.findall('<div id="post-[0-9]*_[0-9]*" class="post all own"', doc)    
+    divids = re.findall('<div id="post-[0-9]*_[0-9]*" class="post all own', doc)    
     doc = re.split('\n',doc)
     
     for divid in divids:
@@ -46,15 +46,15 @@ def findPosts():
 
 
 def takePost(post):
+    global tags
     post = lxml.html.fromstring(post) 
     textbody = post.xpath("//div[@class='post_info']")
     for fullpost in textbody:      
         els = fullpost.xpath("//div[@class='wall_text']")
         for el in els:
             el = etree.tostring(el, pretty_print=True, encoding='utf-8')
-
             body = ''
-            body = findDateAndTime(fullpost,body)
+            body = findDateAndTime(fullpost,body) + '<img src="../../.extras/Media/ava.jpg" height="100px;" align="left"></img>\n'
             text = re.compile(r'<a class="published_by_photo".*', re.DOTALL).sub(' ', el)
             body = findText(text, body)
             body = findQuote(el, body)
@@ -64,6 +64,19 @@ def takePost(post):
             body = body + '</div>'
 
         body = makeComments(fullpost,body)
+        tags = takeTags(tags)
+        executeTags(tags)
+        if tags != [] and tags != '':
+            tagslist = 'TAGS: '
+
+            for tag in tags:
+                tagslist = tagslist + tag + ', '
+
+            tagslist = re.sub(r',$|,\s$', '', tagslist)
+            body = re.sub('TAGS:', tagslist, body)
+        else:
+            body = re.sub('TAGS: <br/>\n', '', body)
+        
         body = '<div class="post">' + body + '</div>\n'
         createPost(body)
 
@@ -87,12 +100,12 @@ def makeComments(post,body):
             avatar = re.findall(r'(?<=<img src=")[^"]*(?=" width="50" height="50" class="reply_image"/>)',comm)
 
             if avatar[0] in avatars:
-                ava = '<img src="' + avatars[avatar[0]] + '" height=50px; align="left"></img>'
+                ava = '<img src="' + avatars[avatar[0]] + '" height="50px;" align="left"></img>'
             else:
                 ava = moveFile(avatar[0])
                 newOld = {avatar[0]:ava}
                 avatars.update(newOld)
-                ava = '<img src="' + ava + '" height=50px; align="left"></img>'
+                ava = '<img src="' + ava + '" height="50px;" align="left"></img>'
 
             if '<div class="wall_reply_text">' in comm:
                 text = re.findall(r'<div class="wall_reply_text">.*', comm)
@@ -109,7 +122,7 @@ def makeComments(post,body):
             text = findImages(comm,text)
             text = findAudio(comm,text)
             text = findVideo(comm,text)
-            comment = '<div class="comm">' + ava + '<div style="margin-left:50px;display:inline;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + ' (' + msc[0] + ' ' + msc[1] + ' по Москве)' + '<br>' + text + '</div></div>\n'
+            comment = '<div class="comm">' + ava + '<div style="margin-left:"50px";display:inline;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + ' (' + msc[0] + ' ' + msc[1] + ' по Москве)' + '<br/>' + text + '</div></div>\n'
             body = body + comment
   
         body = body + '</div>'
@@ -118,13 +131,12 @@ def makeComments(post,body):
 
 
 def findText(text,body):
-    tags = ''
-    body = body + '<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">'
+    global tags
+    body = body + '<div class="text">'
     if '<div class="wall_post_text">' in text:
         text = re.sub('<br/>', '\n', text)
         if '<a href="http://vk.com/' in text:
-            tags = re.findall(r'<a href="http://vk.com/[^<>]*>#[^<>]*</a>', text) ##Tags saved
-            tags = executeTags(tags)
+            tags = re.findall(r'<a href="http://vk.com/[^<>]*>#[^<>]*</a>', text)
             text = re.sub(r'<a href="http://vk.com/[^<>]*>#[^<>]*</a>', ' ', text)
         if  '<a class="lnk" href="' in text:
             links = re.findall(r'(?<=<a class="lnk" href="http://vk.com/away.php\?to=)h[^"]*',text)
@@ -132,7 +144,7 @@ def findText(text,body):
                 link = re.sub(r'&amp;.*', '', link)
                 link = re.sub('%2F', '/', link)
                 link = re.sub('%3A', ':', link)
-                link = '<a href="' + link + '">Ссылка</a><br>'
+                link = '<a href="' + link + '">Ссылка</a><br/>'
                 body = body + link
         text = re.compile('^.*<div class="wall_post_text">|</div>.*|<a class="wall_post_more".{,130}</a>', re.DOTALL).sub('', text)
         links = changeLinksInText(text)
@@ -142,34 +154,22 @@ def findText(text,body):
 
         text = re.sub(r'<a href="http[^<>]*>[^<>]*</a>', ' ', text)
         text = re.compile('<[^<>]*>', re.DOTALL).sub('', text)
-        text = re.sub('\n', '<br>', text)
-        text = re.sub(r'(<br>){3,}', '<br><br>', text)
+        text = re.sub('\n', '<br/>', text)
+        text = re.sub(r'(<br/>){3,}', '<br/><br/>', text)
 
         for i in range(1,20):
-            text = re.sub(r'^(<br>|\s)|(<br>|\s)$', '', text)
+            text = re.sub(r'^(<br/>|\s)|(<br/>|\s)$', '', text)
 
-        body = body + text + '<br>\n'
+        body = body + text + '<br/>\n'
         if tags != '':
-            body = body + "TAGS: "
-            
-            for tag in tags:
-                body = body + tag + ', '
-            body = re.sub(r',$','',body) + '<br>\n'
+            body = body + "TAGS: <br/>\n"
 
     return body
 
 
 def executeTags(tags):
-    if tags != '':
-        tagslist = []        
-
-        for tag in tags:
-            newtag = re.sub(r'^.*>#|@.*|<[^<>]*>', '', tag)
-            tagslist.append(newtag)
-        addConnections(addTagsInDB(tagslist),addDayInDB())
-        return tagslist
-    else:
-        return ''
+    if tags != []:
+        addConnections(addTagsInDB(tags),addDayInDB())
 
 
 def changeLinksInText(text):
@@ -180,13 +180,14 @@ def changeLinksInText(text):
             link = re.sub(r'&amp;.*', '', link)
             link = re.sub('%2F', '/', link)
             link = re.sub('%3A', ':', link)
-            link = '<a href="' + link + '">Ссылка</a><br>'
+            link = '<a href="' + link + '">Ссылка</a><br/>'
             links2.append(link)
     
     return links2    
 
 
-def findQuote(el, body):        
+def findQuote(el, body):       
+ 
     if '<a class="published_by_photo"' in el:
         repost = re.findall(r'<a class="published_by_photo".*', el, re.DOTALL)
         title = re.findall(r'<a class="published_by".*', repost[0])
@@ -212,11 +213,13 @@ def findQuote(el, body):
             else:
                 date = changeDate(dateTime)
 
-            top = top + ' (' + date + ' ' + time + ')<br>\n'
+            top = top + ' (' + date + ' ' + time + ')<br/>\n'
         
         body = body + '<blockquote>' + top
-        body = findText(repost[0],body)
-        body = body + '</blockquote><br>\n'
+        body = findText(repost[0],body) + '</div>'
+        body = body + '</blockquote><br/>\n'
+        if not 'quote' in addTags:
+            addTags.append('quote')
 
     return body
      
@@ -233,8 +236,9 @@ def findImages(el, body):
             link = link + '.jpg'
             body = body + '<img src="' + downloadFile(link) + '"></img>'
 
-        body = body + '<br>'
- 
+        body = body + '<br/>'
+        if not 'image' in addTags:
+            addTags.append('image')
     return body
 
 
@@ -245,16 +249,18 @@ def findAudio(el, body):
         for audio in audios:
             link = re.compile(r'^.*value="(?=http://)|(?<=.mp3).*',re.DOTALL).sub('',audio)
             audio = re.compile(r'^.*(?=<div class="title_wrap fl_l")|<[^<>]*>', re.DOTALL).sub('', audio)
-            body = body + audio + '<br>\n<audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio>' + '<br>\n'
+            body = body + audio + '<br/>\n<audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio>' + '<br/>\n'
 
-        body = body + '</div><br>\n'
+        body = body + '</div><br/>\n'
+        if not 'audio' in addTags:
+            addTags.append('audio')
 
     return body
     
 
 def findVideo(el, body):
     if '<a href="http://vk.com/video' in el:
-        body = body + '<div class="video">Video:<br>\n'
+        body = body + '<div class="video">Video:<br/>\n'
         videos = re.findall('<div class="page_post_queue_narrow"><div class="page_post_sized.*\n.*\n.*', el)
         
         for video in videos:
@@ -263,10 +269,12 @@ def findVideo(el, body):
             image = (re.findall(r'(?<=<img src=")[^"]+', video[0]))[0]
             image = moveFile(image)
             title = re.sub(r'^.*<span class="a post_video_title">|</span>.*|<[^<>]*>', '', video[2])
-            assembly = '<a href="' + link + '"> "' + title + '" <br>\n<img src="' + image + '"></img></a><br>\n'
+            assembly = '<a href="' + link + '"> "' + title + '" <br/>\n<img src="' + image + '"></img></a><br/>\n'
             body = body + assembly
 
         body = body + '</div>'
+        if not 'video' in addTags:
+            addTags.append('video')
 
     return body
 
@@ -276,8 +284,9 @@ def checkForDoubles(link):
     doubling = "N"
 
     for image in images:
-        if filecmp.cmp(link, "Diary/.extras/Media/" + image):
-            doubling = "Diary/.extras/Media/" + image
+        if not link == "Diary/.extras/Media/" + image:
+            if filecmp.cmp(link, "Diary/.extras/Media/" + image):
+                doubling = "Diary/.extras/Media/" + image
 
     return doubling
 
@@ -286,6 +295,10 @@ def downloadFile(url):
     fileway = chooseFileWay(url)
     print "Downloading picture for post by date", re.sub(r'Diary/|/[0-9]*/[0-9]*\.jpg', '', fway)
     urllib.urlretrieve(url, fileway)
+    doubling = checkForDoubles(fileway)
+    if not doubling == "N":
+        os.remove(fileway)
+        fileway = doubling
     fileway = re.sub(r'Diary/.extras/Media/', '../../.extras/Media/', fileway)
 
     return fileway
@@ -332,9 +345,9 @@ def findDateAndTime(post,body):
         makeWay(DT)
         newPostTime = DT[1]
         if not k == "not accurate":
-            body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве) </b><br>'
+            body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве) </b><br/> \n'
         else:
-            body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве)</b>\n<sup>Время не было указано, может быть неточность не более, чем в +24часа</sup><br>'
+            body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве)</b>\n<sup>Время не было указано, может быть неточность не более, чем в +24часа</sup><br/>\n'
 
     return body
 
@@ -449,7 +462,63 @@ def makeWay(DT):
     global f2
     global fway
     fway = re.sub('.html','',output)
- 
+
+
+def takeTags(tags):
+
+    global addTags
+    tagslist = [] 
+       
+    for tag in tags:
+        newtag = re.sub(r'^.*>#|@.*|<[^<>]*>', '', tag)
+        tagslist.append(newtag)
+    
+    tags = tagslist
+
+    if addTags != []: 
+
+        for tag in addTags:
+            if not tag in tags:
+                tags.append(tag)
+
+    if len(sys.argv) > 2:
+        if sys.argv[2] == '-t':
+            taglist = ''
+      
+            for tag in tags:
+                taglist = taglist + tag + ','
+        
+            taglist = re.sub(r', $|,$', '', taglist)
+            ask = ''
+
+            while (ask != 'Y')and(ask != 'y'):
+                inptags = ''
+                print "Your text is:\n", text + '\n'
+                ask = raw_input("Your tags is: " + taglist + ". Do you want to change it?(Y/N): ")
+                ask = re.sub(r'^\s*|\s+$', '', ask)
+                ask = re.sub(r'\s{2,}', ' ', ask)
+                if (ask != 'N')and(ask != 'n'):
+                    inptags = raw_input("Write new tags. Use comma to divide them. If you don't want change tags, then continue. You'll have a chance to change your decision.\nTAGS: ")
+                    inptags = re.sub(r'^\s*|\s+$', '', inptags)
+                    inptags = re.sub(r'\s{2,}', ' ', inptags)
+                    ask = raw_input("Your tags is: " + inptags + ". Is it right?(Y/N): ")
+                    ask = re.sub(r'^\s*|\s+$', '', ask)
+                    ask = re.sub(r'\s{2,}', ' ', ask)
+                else:
+                    ask = raw_input("You are not going to change your tags, right?(Y/N): ")
+                    ask = re.sub(r'^\s*|\s+$', '', ask)
+                    ask = re.sub(r'\s{2,}', ' ', ask)
+
+            if not inptags == '':
+                inptags = re.sub(r'\s+(?=,)|(?<=,)\s+', '', inptags)
+                inptags = re.split(',',inptags)
+                tags = []
+
+                for tag in inptags:
+                    tags.append(tag)
+        
+    return tags
+
 
 def addTagsInDB(tags):
     db = sqlite3.connect("Diary/.extras/test.db")
@@ -504,7 +573,7 @@ def addConnections(idTags,idDay):
 
         for idTag in idTags:
             cur.execute('SELECT idTag, idWay FROM connections WHERE idTag = "' + idTag + '" AND idWay = "' + idDay + '";')
-            if not cur.fetchall() == '':
+            if cur.fetchall() == []:
                 cur.execute('INSERT INTO connections (idTag,idWay) VALUES("' + idTag + '","' + idDay+ '");')
 
     cur.close()
@@ -513,12 +582,12 @@ def addConnections(idTags,idDay):
 
 
 def createPost(body):
-    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:100px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n' 
+    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:110px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n' 
     if os.path.exists(fway + '.html'):
         f2 = open(fway + '.html', 'r')
         pst = f2.read()
         f2.close()
-        if not body in pst:
+        if not (re.sub(r'<[^<>]*>|\s*|\\n*', '',body)) in (re.sub(r'<[^<>]*>|\s*|\\n*', '',pst)):
             maintime = re.split(':',newPostTime)
             maintime = datetime.time(int(maintime[0]),int(maintime[1]))
             pstt = lxml.html.fromstring(pst) 
@@ -530,14 +599,15 @@ def createPost(body):
                 postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
                 postTime = re.split(':',postTime)
                 postTime = datetime.time(int(postTime[0]),int(postTime[1]))
-                if maintime > postTime:
-                    newFile = newFile + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
+                if maintime >= postTime and body == '':
+                    newFile = newFile + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br/>'
                 else:
-                    newFile = newFile + body + '\n<br>' + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br>'
+ 
+                    newFile = newFile + body + '\n<br/>' + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br/>'
                     body = ''
 
             if not body == '':
-                newFile = newFile + body + '\n<br>'
+                newFile = newFile + body + '\n<br/>'
 
             f2 = open(fway + '.html', 'w')
             print >>f2, newFile, '</html></body>'
@@ -568,8 +638,11 @@ k = ''
 newPostTime = ''
 
 for post in posts:
+    addTags =  []
+    text = ''
+    tags = []
     takePost(post)
-    
+    '''
 db = sqlite3.connect("Diary/.extras/test.db")
 cur = db.cursor()
 cur.execute('SELECT * FROM tags;')
@@ -579,10 +652,10 @@ print cur.fetchall()
 cur.execute('SELECT * FROM connections;')
 print cur.fetchall()
 cur.close()
-db.close()
+db.close()'''
 
 f.close()
-##Повторения в бд? Откуда взялось 15-ое?
+## В quote ссылка на паблик, аватарка. Проверить работу -t
+## Придумать идентификационный номер для каждого поста на основе исходного файла/содержания 
 ##Время не сейчас, а время сохранения файла для версии с сохранением. Для селениума пометить, где нужно вернуть обратно.
-##Теги. Докачиваемая таблица или файл для каждого тега? 
 ##Селениум. Пока его нет, сделать версию для скачанных файлов (ориентир по дате обновления). Пометить, чтобы изменить потом обратно.
