@@ -34,7 +34,7 @@ def findTags():
         tags = []
 
         for tag in rawtags:
-            tag = re.sub(r'<a.*">|</a.*>|^\s+|\s+$', '', tag)
+            tag = re.sub(r'<a.*">|</a.*>|^\s+|\s+$', '', tag).lower()
             tags.append(tag)
         
         return tags
@@ -341,6 +341,66 @@ def makeFile():
     f2.close()
 
 
+def addTagsInDB(tags):
+    db = sqlite3.connect("Diary/.extras/test.db")
+    cur = db.cursor()
+    cur.execute('PRAGMA encoding = "UTF-8";')
+    cur.execute('CREATE TABLE IF NOT EXISTS tags (idtag INTEGER PRIMARY KEY, tag TEXT);')
+
+    for tag in tags:
+        if tag != '':
+            with db:
+                cur.execute('SELECT idtag, tag FROM tags WHERE tag = "' + tag + '";')
+                if cur.fetchall() == []:
+                    cur.execute('INSERT INTO tags (tag) VALUES("' + tag + '");')
+
+    tagslist = []
+
+    for tag in tags:
+        if tag != '':
+            with db:
+                cur.execute('SELECT idtag FROM tags WHERE tag ="'+ tag + '";')
+                tagslist.append(str((cur.fetchone())[0]))
+ 
+    cur.close()
+    db.close()
+
+    return tagslist
+
+
+def addDayInDB():
+    db = sqlite3.connect("Diary/.extras/test.db")
+    cur = db.cursor()
+    cur.execute('PRAGMA encoding = "UTF-8";')
+    cur.execute('CREATE TABLE IF NOT EXISTS ways (idway INTEGER PRIMARY KEY, way TEXT);')
+    with db:
+        cur.execute('SELECT idway, way FROM ways WHERE way = "' + postway + '";')
+        if cur.fetchall() == []:
+            cur.execute('INSERT INTO ways (way) VALUES("' + postway + '");')
+        cur.execute('SELECT idway FROM ways WHERE way ="'+ postway + '";')
+        idDay = str((cur.fetchone())[0]) 
+    cur.close()
+    db.close()
+
+    return idDay
+
+
+def addConnections(idTags,idDay):
+    db = sqlite3.connect("Diary/.extras/test.db")
+    cur = db.cursor()
+    cur.execute('PRAGMA encoding = "UTF-8";')
+    cur.execute('CREATE TABLE IF NOT EXISTS connections (idTag INTEGER, idWay INTEGER);')
+    with db:
+
+        for idTag in idTags:
+            cur.execute('SELECT idTag, idWay FROM connections WHERE idTag = "' + idTag + '" AND idWay = "' + idDay + '";')
+            if not cur.fetchall() == '':
+                cur.execute('INSERT INTO connections (idTag,idWay) VALUES("' + idTag + '","' + idDay+ '");')
+
+    cur.close()
+    db.close()
+
+
 def checkForDoubles(link):
     images = os.listdir("Diary/.extras/Media")
     doubling = "N"
@@ -355,13 +415,7 @@ def loadExtras():
         os.makedirs("Diary/.extras/Media")
     if not os.path.exists("Diary/.extras/Media/ava.jpg"):
         urllib.urlretrieve("http://cs5298.userapi.com/g32561651/a_ea42f7ac.jpg", "Diary/.extras/Media/ava.jpg")
-'''    if not os.path.exists("Diary/.exstras/tags.db")
-        db = sqlite3.connect('Diary/.exstras/tags.db')
-        cur = db.cursor() ##!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-        
-        
-def addTag(tag): ##!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-'''
+
 
 def executeFile():
     global body
@@ -418,6 +472,19 @@ fold = splitDateOnFolders()
 postway = createFoulders()
 moveFiles()
 body = makeBody()
+addConnections(addTagsInDB(tags),addDayInDB())
+
+db = sqlite3.connect("Diary/.extras/test.db")
+cur = db.cursor()
+cur.execute('SELECT * FROM tags;')
+print cur.fetchall()
+cur.execute('SELECT * FROM ways;')
+print cur.fetchall()
+cur.execute('SELECT * FROM connections;')
+print cur.fetchall()
+cur.close()
+db.close()
+
 if os.path.exists(postway):
     executeFile()
 else:
@@ -425,4 +492,4 @@ else:
 
 f.close()
 
-##Сделать, чтобы работало с файлами из других директорий.
+##Сделать, чтобы работало с файлами из других директорий.Добавление тегов к существующим по желанию

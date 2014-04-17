@@ -1,13 +1,7 @@
 # -*- coding:utf-8 -*-
 
-import re, sys, lxml.html, datetime, os, shutil, urllib,filecmp
+import re, sys, lxml.html, datetime, os, shutil, urllib, filecmp, sqlite3
 from lxml import etree
-
-f = open(sys.argv[1], 'r')
-f2 = ''
-fway = ''
-
-
 
 
 def normalize():
@@ -53,7 +47,6 @@ def findPosts():
 
 def takePost(post):
     post = lxml.html.fromstring(post) 
-   
     textbody = post.xpath("//div[@class='post_info']")
     for fullpost in textbody:      
         els = fullpost.xpath("//div[@class='wall_text']")
@@ -127,14 +120,12 @@ def makeComments(post,body):
 def findText(text,body):
     tags = ''
     body = body + '<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">'
-
     if '<div class="wall_post_text">' in text:
         text = re.sub('<br/>', '\n', text)
-
         if '<a href="http://vk.com/' in text:
             tags = re.findall(r'<a href="http://vk.com/[^<>]*>#[^<>]*</a>', text) ##Tags saved
+            tags = executeTags(tags)
             text = re.sub(r'<a href="http://vk.com/[^<>]*>#[^<>]*</a>', ' ', text)
-
         if  '<a class="lnk" href="' in text:
             links = re.findall(r'(?<=<a class="lnk" href="http://vk.com/away.php\?to=)h[^"]*',text)
             for link in links:
@@ -143,7 +134,6 @@ def findText(text,body):
                 link = re.sub('%3A', ':', link)
                 link = '<a href="' + link + '">Ссылка</a><br>'
                 body = body + link
-
         text = re.compile('^.*<div class="wall_post_text">|</div>.*|<a class="wall_post_more".{,130}</a>', re.DOTALL).sub('', text)
         links = changeLinksInText(text)
 
@@ -157,9 +147,29 @@ def findText(text,body):
 
         for i in range(1,20):
             text = re.sub(r'^(<br>|\s)|(<br>|\s)$', '', text)
+
         body = body + text + '<br>\n'
+        if tags != '':
+            body = body + "TAGS: "
+            
+            for tag in tags:
+                body = body + tag + ', '
+            body = re.sub(r',$','',body) + '<br>\n'
 
     return body
+
+
+def executeTags(tags):
+    if tags != '':
+        tagslist = []        
+
+        for tag in tags:
+            newtag = re.sub(r'^.*>#|@.*|<[^<>]*>', '', tag)
+            tagslist.append(newtag)
+        addConnections(addTagsInDB(tagslist),addDayInDB())
+        return tagslist
+    else:
+        return ''
 
 
 def changeLinksInText(text):
@@ -439,6 +449,67 @@ def makeWay(DT):
     global f2
     global fway
     fway = re.sub('.html','',output)
+ 
+
+def addTagsInDB(tags):
+    db = sqlite3.connect("Diary/.extras/test.db")
+    cur = db.cursor()
+    cur.execute('PRAGMA encoding = "UTF-8";')
+    cur.execute('CREATE TABLE IF NOT EXISTS tags (idtag INTEGER PRIMARY KEY, tag TEXT);')
+
+    for tag in tags:
+        if tag != '':
+            with db:
+                cur.execute('SELECT idtag, tag FROM tags WHERE tag = "' + tag + '";')
+                if cur.fetchall() == []:
+                    cur.execute('INSERT INTO tags (tag) VALUES("' + tag + '");')
+
+    tagslist = []
+
+    for tag in tags:
+        if tag != '':
+            with db:
+                cur.execute('SELECT idtag FROM tags WHERE tag ="'+ tag + '";')
+                tagslist.append(str((cur.fetchone())[0]))
+ 
+    cur.close()
+    db.close()
+
+    return tagslist
+
+
+def addDayInDB():
+    db = sqlite3.connect("Diary/.extras/test.db")
+    cur = db.cursor()
+    cur.execute('PRAGMA encoding = "UTF-8";')
+    cur.execute('CREATE TABLE IF NOT EXISTS ways (idway INTEGER PRIMARY KEY, way TEXT);')
+    with db:
+        cur.execute('SELECT idway, way FROM ways WHERE way = "' + fway + '.html";')
+        if cur.fetchall() == []:
+            cur.execute('INSERT INTO ways (way) VALUES("' + fway + '.html");')
+        cur.execute('SELECT idway FROM ways WHERE way ="'+ fway + '.html";')
+        idDay = str((cur.fetchone())[0]) 
+    cur.close()
+    db.close()
+
+    return idDay
+
+
+def addConnections(idTags,idDay):
+    db = sqlite3.connect("Diary/.extras/test.db")
+    cur = db.cursor()
+    cur.execute('PRAGMA encoding = "UTF-8";')
+    cur.execute('CREATE TABLE IF NOT EXISTS connections (idTag INTEGER, idWay INTEGER);')
+    with db:
+
+        for idTag in idTags:
+            cur.execute('SELECT idTag, idWay FROM connections WHERE idTag = "' + idTag + '" AND idWay = "' + idDay + '";')
+            if not cur.fetchall() == '':
+                cur.execute('INSERT INTO connections (idTag,idWay) VALUES("' + idTag + '","' + idDay+ '");')
+
+    cur.close()
+    db.close()
+
 
 
 def createPost(body):
@@ -487,7 +558,9 @@ def loadExtras():
 
 ##MAIN:
 print "Be sure, that your date and time on computer is right, because you can have wrong result. Language of vk.com is RUS, and there is nothing else, just wall without open messages"
-
+f = open(sys.argv[1], 'r')
+f2 = ''
+fway = ''
 doc = normalize()
 posts = findPosts()
 loadExtras()
@@ -497,8 +570,19 @@ newPostTime = ''
 for post in posts:
     takePost(post)
     
+db = sqlite3.connect("Diary/.extras/test.db")
+cur = db.cursor()
+cur.execute('SELECT * FROM tags;')
+print cur.fetchall()
+cur.execute('SELECT * FROM ways;')
+print cur.fetchall()
+cur.execute('SELECT * FROM connections;')
+print cur.fetchall()
+cur.close()
+db.close()
 
 f.close()
+##Повторения в бд? Откуда взялось 15-ое?
 ##Время не сейчас, а время сохранения файла для версии с сохранением. Для селениума пометить, где нужно вернуть обратно.
 ##Теги. Докачиваемая таблица или файл для каждого тега? 
 ##Селениум. Пока его нет, сделать версию для скачанных файлов (ориентир по дате обновления). Пометить, чтобы изменить потом обратно.

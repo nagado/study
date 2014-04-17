@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-import re, datetime, os, urllib, lxml.html
+import re, datetime, os, urllib, lxml.html, sqlite3
 from lxml import etree
 
 def findDT(time):
@@ -58,7 +58,7 @@ def takeTime():
             ask = raw_input("You had chose default system time. Are you sure?(Y/N)")
         else:
             ask = raw_input("Are you sure that time " + time + " is right?(Y/N)")
-        if (ask != 'Y')or(ask != 'y'):
+        if (ask != 'Y')and(ask != 'y'):
             print "Try again"
 
     return time
@@ -66,6 +66,7 @@ def takeTime():
 
 def askTime():
     time = raw_input("Do you want to set time of your record (If not, it will be just system time)?(Y/N): ")
+    time = re.sub(r'^\s+|\s+$', '', time)
     if (time == "Y")or(time == "y"):
         time = raw_input('Set your time in format dd.mm.yyyy hh:mm (time in 24-hour format) or press "N" for default time: ')
         if (time == "N")or(time == "n"):
@@ -80,14 +81,10 @@ def takePost():
     global text,tags,time
     time = takeTime()
     text = raw_input("Print text of your record. If you want to make paragraph, use <br>. Also use all tags, that needed for text\n")
-    tags = raw_input("Print tags, use comma to divide it\nTAGS: ")
+    tags = raw_input("Print tags, use comma to divide it\nTAGS: ").lower()
     tags = re.sub(r'\s{2,}', '\s', tags)
     tags = re.sub(r'^\s|\s$|(?<=,)\s|\s(?=,)', '', tags)
-    tags = re.split(",", tags) ##Tags. Don't forget to make them lowercase for sqlite3!
-     
-    
-        
-
+    tags = re.split(",", tags)
 
 
 def makePost():
@@ -97,11 +94,11 @@ def makePost():
     time = DT[1] 
     msc = twoDT[1]
     body = '<div class="post"><b>' + DT[0] + ' <div class="time"> ' + DT[1] + " </div> (" + msc[0] + ' ' + msc[1] + ' по Москве)</b><br>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">' + text + "<br>\n"
-    if not tags == '':
+    if not tags == '' and not tags == None:
         body = body + "TAGS: "
-
         for tag in tags:
-            body = body + tag + ', '
+            if tag != '':
+                body = body + tag + ', '
 
     body = re.sub(r',\s$', '', body) + '</div></div>'
  
@@ -114,6 +111,65 @@ def makeWay(date):
     fway = 'Diary/' + date[2] + '/' + date[1] + '/' + date[0] + '.html'
     if not os.path.exists(re.sub(r'[^/]*.html', '', fway)):
         os.makedirs(re.sub(r'[^/]*.html', '', fway))
+
+
+def addTagsInDB(tags):
+    db = sqlite3.connect("Diary/.extras/test.db")
+    cur = db.cursor()
+    cur.execute('PRAGMA encoding = "UTF-8";')
+    cur.execute('CREATE TABLE IF NOT EXISTS tags (idtag INTEGER PRIMARY KEY, tag TEXT);')
+
+    for tag in tags:
+        if tag != '':
+            with db:
+                cur.execute('SELECT idtag, tag FROM tags WHERE tag = "' + tag + '";')
+                if cur.fetchall() == []:
+                    cur.execute('INSERT INTO tags (tag) VALUES("' + tag + '");')
+
+    tagslist = []
+
+    for tag in tags:
+        if tag != '':
+            with db:
+                cur.execute('SELECT idtag FROM tags WHERE tag ="'+ tag + '";')
+                tagslist.append(str((cur.fetchone())[0]))
+ 
+    cur.close()
+    db.close()
+
+    return tagslist
+
+
+def addDayInDB():
+    db = sqlite3.connect("Diary/.extras/test.db")
+    cur = db.cursor()
+    cur.execute('PRAGMA encoding = "UTF-8";')
+    cur.execute('CREATE TABLE IF NOT EXISTS ways (idway INTEGER PRIMARY KEY, way TEXT);')
+    with db:
+        cur.execute('SELECT idway, way FROM ways WHERE way = "' + fway + '";')
+        if cur.fetchall() == []:
+            cur.execute('INSERT INTO ways (way) VALUES("' + fway + '");')
+        cur.execute('SELECT idway FROM ways WHERE way ="'+ fway + '";')
+        idDay = str((cur.fetchone())[0]) 
+    cur.close()
+    db.close()
+
+    return idDay
+
+def addConnections(idTags,idDay):
+    db = sqlite3.connect("Diary/.extras/test.db")
+    cur = db.cursor()
+    cur.execute('PRAGMA encoding = "UTF-8";')
+    cur.execute('CREATE TABLE IF NOT EXISTS connections (idTag INTEGER, idWay INTEGER);')
+    with db:
+
+        for idTag in idTags:
+            cur.execute('SELECT idTag, idWay FROM connections WHERE idTag = "' + idTag + '" AND idWay = "' + idDay + '";')
+            if not cur.fetchall() == '':
+                cur.execute('INSERT INTO connections (idTag,idWay) VALUES("' + idTag + '","' + idDay+ '");')
+
+    cur.close()
+    db.close()
 
 
 def createFile():
@@ -164,7 +220,11 @@ def loadExtras():
 text = ''
 tags = ''
 fway = ''
-takePost()
 loadExtras()
+takePost()
 body = makePost()
+addConnections(addTagsInDB(tags),addDayInDB())
 createFile()
+
+
+##Если картинка или видео, или аудо, добавлять соответствующий тег. Сделать работу с базой для вк и лт.сделать lowercase
