@@ -176,26 +176,28 @@ def addConnections(idTags,idDay):
 def createFile():
     global body
     newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:110px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n'
+    body = etree.tostring(lxml.html.fromstring(body.decode("utf-8")), pretty_print=True, encoding="utf-8", method="html")
     if os.path.exists(fway):
         f2 = open(fway, 'r')
         pst = f2.read()
         f2.close()
-        if not (re.sub(r'<[^<>]*>|\s*|\\n*', '',body)) in (re.sub(r'<[^<>]*>|\s*|\\n*', '',pst)):
+        if not body in pst:
             maintime = re.split(':',time)
             maintime = datetime.time(int(maintime[0]),int(maintime[1]))
             pstt = lxml.html.fromstring(pst) 
             posts = pstt.xpath("//div[@class='post']")   
-     
+
             for post in posts:
                 postTime = post.xpath("//div[@class='time']")
                 postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8')
                 postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
                 postTime = re.split(':',postTime)
                 postTime = datetime.time(int(postTime[0]),int(postTime[1]))
+                post = etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")
                 if maintime >= postTime:
-                    newFile = newFile + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br/>'
+                    newFile = newFile + post + '\n<br/>'
                 else:
-                    newFile = newFile + body + '\n<br/>' + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br/>'
+                    newFile = newFile + body + '\n<br/>' + post + '\n<br/>'
                     body = ''
 
             if not body == '':
@@ -226,7 +228,7 @@ takePost()
 body = makePost()
 if not tags == ['']:
     addConnections(addTagsInDB(tags),addDayInDB())
-
+'''
 db = sqlite3.connect("Diary/.extras/test.db")
 cur = db.cursor()
 cur.execute('SELECT * FROM tags;')
@@ -235,9 +237,6 @@ cur.execute('SELECT * FROM ways;')
 print cur.fetchall()
 cur.execute('SELECT * FROM connections;')
 print cur.fetchall()
-cur.close()
+cur.close()'''
 
 createFile()
-
-
-##Если картинка или видео, или аудио, добавлять соответствующий тег. Проверка существования файла при создании

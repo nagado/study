@@ -46,7 +46,8 @@ def findPosts():
 
 
 def takePost(post):
-    global tags
+    global tags, p
+    p = ''
     post = lxml.html.fromstring(post) 
     textbody = post.xpath("//div[@class='post_info']")
     for fullpost in textbody:      
@@ -131,7 +132,7 @@ def makeComments(post,body):
 
 
 def findText(text,body):
-    global tags
+    global tags, texxt, p
     body = body + '<div class="text">'
     if '<div class="wall_post_text">' in text:
         text = re.sub('<br/>', '\n', text)
@@ -161,6 +162,8 @@ def findText(text,body):
             text = re.sub(r'^(<br/>|\s)|(<br/>|\s)$', '', text)
 
         body = body + text + '<br/>\n'
+        if p == '':
+            texxt = text 
         if tags != '':
             body = body + "TAGS: <br/>\n"
 
@@ -493,7 +496,7 @@ def takeTags(tags):
 
             while (ask != 'Y')and(ask != 'y'):
                 inptags = ''
-                print "Your text is:\n", text + '\n'
+                print "Your text is:\n", texxt + '\n'
                 ask = raw_input("Your tags is: " + taglist + ". Do you want to change it?(Y/N): ")
                 ask = re.sub(r'^\s*|\s+$', '', ask)
                 ask = re.sub(r'\s{2,}', ' ', ask)
@@ -583,27 +586,29 @@ def addConnections(idTags,idDay):
 
 def createPost(body):
     newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:110px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n' 
+    body = etree.tostring(lxml.html.fromstring(body.decode("utf-8")), pretty_print=True, encoding="utf-8", method="html")
     if os.path.exists(fway + '.html'):
         f2 = open(fway + '.html', 'r')
         pst = f2.read()
         f2.close()
-        if not (re.sub(r'<[^<>]*>|\s*|\\n*', '',body)) in (re.sub(r'<[^<>]*>|\s*|\\n*', '',pst)):
+        if not body in pst:
             maintime = re.split(':',newPostTime)
             maintime = datetime.time(int(maintime[0]),int(maintime[1]))
             pstt = lxml.html.fromstring(pst) 
             posts = pstt.xpath("//div[@class='post']")   
-     
+
             for post in posts:
                 postTime = post.xpath("//div[@class='time']")
                 postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8')
                 postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
                 postTime = re.split(':',postTime)
                 postTime = datetime.time(int(postTime[0]),int(postTime[1]))
+                post = etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")
                 if maintime >= postTime and body == '':
-                    newFile = newFile + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br/>'
+                    newFile = newFile + post + '\n<br/>'
                 else:
  
-                    newFile = newFile + body + '\n<br/>' + etree.tostring(post, pretty_print=True, encoding='utf-8') + '\n<br/>'
+                    newFile = newFile + body + '\n<br/>' + post + '\n<br/>'
                     body = ''
 
             if not body == '':
@@ -639,7 +644,7 @@ newPostTime = ''
 
 for post in posts:
     addTags =  []
-    text = ''
+    texxt = ''
     tags = []
     takePost(post)
     '''
@@ -656,6 +661,5 @@ db.close()'''
 
 f.close()
 ## В quote ссылка на паблик, аватарка. Проверить работу -t
-## Придумать идентификационный номер для каждого поста на основе исходного файла/содержания 
 ##Время не сейчас, а время сохранения файла для версии с сохранением. Для селениума пометить, где нужно вернуть обратно.
 ##Селениум. Пока его нет, сделать версию для скачанных файлов (ориентир по дате обновления). Пометить, чтобы изменить потом обратно.
