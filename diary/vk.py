@@ -192,6 +192,9 @@ def changeLinksInText(text):
 def findQuote(el, body):       
  
     if '<a class="published_by_photo"' in el:
+        link = (re.findall(r'(?<=<a class="published_by_photo" href=")[^"]*(?="><img src=")', el))[0]
+        url = (re.findall(r'<a class="published_by_photo" href="[^"]*"><img src="[^"]*', el))[0]
+        url = re.sub(r'^.*<img src="', '',url)
         repost = re.findall(r'<a class="published_by_photo".*', el, re.DOTALL)
         title = re.findall(r'<a class="published_by".*', repost[0])
         title = re.sub(r'<[^<>]*>|^\s|\s$', '', title[0])
@@ -216,7 +219,7 @@ def findQuote(el, body):
             else:
                 date = changeDate(dateTime)
 
-            top = top + ' (' + date + ' ' + time + ')<br/>\n'
+            top = '<img src="' + moveFile(url) + '"></img><b><a href="' + link + '">' + top + '</a> (' + date + ' ' + time + ')</b><br/>\n'
         
         body = body + '<blockquote>' + top
         body = findText(repost[0],body) + '</div>'
@@ -249,8 +252,11 @@ def findAudio(el, body):
     if '<div class="title_wrap fl_l"' in el:
         audios = re.findall('<input type="hidden" id=".*\n.*\n.*', el)
         body = body + '<div class="audio">'
+
         for audio in audios:
             link = re.compile(r'^.*value="(?=http://)|(?<=.mp3).*',re.DOTALL).sub('',audio)
+            if (len(sys.argv)>2) and ('a' in sys.argv[2]):
+                link = downloadFile(link)
             audio = re.compile(r'^.*(?=<div class="title_wrap fl_l")|<[^<>]*>', re.DOTALL).sub('', audio)
             body = body + audio + '<br/>\n<audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio>' + '<br/>\n'
 
@@ -283,20 +289,20 @@ def findVideo(el, body):
 
 
 def checkForDoubles(link):
-    images = os.listdir("Diary/.extras/Media")
+    files = os.listdir("Diary/.extras/Media")
     doubling = "N"
 
-    for image in images:
-        if not link == "Diary/.extras/Media/" + image:
-            if filecmp.cmp(link, "Diary/.extras/Media/" + image):
-                doubling = "Diary/.extras/Media/" + image
+    for fle in files:
+        if not link == "Diary/.extras/Media/" + fle:
+            if filecmp.cmp(link, "Diary/.extras/Media/" + fle):
+                doubling = "Diary/.extras/Media/" + fle
 
     return doubling
 
 
 def downloadFile(url):
     fileway = chooseFileWay(url)
-    print "Downloading picture for post by date", re.sub(r'Diary/|/[0-9]*/[0-9]*\.jpg', '', fway)
+    print "Downloading attachments for post by date", re.sub(r'Diary/|/[0-9]*/[0-9]*\.jpg', '', fway)
     urllib.urlretrieve(url, fileway)
     doubling = checkForDoubles(fileway)
     if not doubling == "N":
@@ -660,6 +666,6 @@ cur.close()
 db.close()'''
 
 f.close()
-## В quote ссылка на паблик, аватарка. Проверить работу -t
+## +at инструкция, добавить такой же тул для видео, поискать возможность увеличивать изображение кликом, и включать только одно аудио на одной странице
 ##Время не сейчас, а время сохранения файла для версии с сохранением. Для селениума пометить, где нужно вернуть обратно.
 ##Селениум. Пока его нет, сделать версию для скачанных файлов (ориентир по дате обновления). Пометить, чтобы изменить потом обратно.
