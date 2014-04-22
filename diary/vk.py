@@ -205,15 +205,15 @@ def findQuote(el, body):
         if not('видеозапись' in dateTime or 'фотография' in dateTime):
 
             if 'вчера' in dateTime:
-                date = (datetime.date.today() - datetime.timedelta(days=1)).strftime("%d.%m.%Y")
+                date = (t - datetime.timedelta(days=1)).strftime("%d.%m.%Y")
                 time =  re.sub(r'.*в\s|\n', '', dateTime)
             elif 'сегодня' in dateTime:
-                date = (datetime.date.today()).strftime("%d.%m.%Y")
+                date = (t).strftime("%d.%m.%Y")
                 time =  re.sub(r'.*в\s|\n', '', dateTime)
 
             elif ' в ' in dateTime:
                 date = re.sub(r'\sв.*','',dateTime)
-                date = date + ' ' + str(datetime.date.today().year)
+                date = date + ' ' + str(t.year)
                 date = changeDate(re.sub('\n','',date))
                 time = re.sub(r'.*в\s|\n', '', dateTime)
             else:
@@ -240,7 +240,9 @@ def findImages(el, body):
             link = re.findall(r'http://cs[^]]*', link)
             link = re.sub(r'&quot;,&quot;x_&quot;:\[&quot;|&quot;.*', '', link[0])
             link = link + '.jpg'
-            body = body + '<img src="' + downloadFile(link) + '"></img>'
+            if 'i' in keys:
+                link = downloadFile(link)
+            body = body + '<img src="' + link + '"></img>'
 
         body = body + '<br/>'
         if not 'image' in addTags:
@@ -255,10 +257,10 @@ def findAudio(el, body):
 
         for audio in audios:
             link = re.compile(r'^.*value="(?=http://)|(?<=.mp3).*',re.DOTALL).sub('',audio)
-            if (len(sys.argv)>2) and ('a' in sys.argv[2]):
+            if 'a' in keys:
                 link = downloadFile(link)
             audio = re.compile(r'^.*(?=<div class="title_wrap fl_l")|<[^<>]*>', re.DOTALL).sub('', audio)
-            body = body + audio + '<br/>\n<audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio>' + '<br/>\n'
+            body = body + audio + '<br/>\n<audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio><br/>\n'
 
         body = body + '</div><br/>\n'
         if not 'audio' in addTags:
@@ -362,35 +364,35 @@ def findDateAndTime(post,body):
 
 
 def translateDate(DT):
-    global k
+    global k,t
     k = 'actual'
     if ('секунд' in DT)or('только что' in DT):
-        date = datetime.datetime.now().strftime("%d.%m.%Y")
-        time = datetime.datetime.now().strftime("%H:%M")
+        date = t.strftime("%d.%m.%Y")
+        time = t.strftime("%H:%M")
     elif ' минут' in DT:
-        date = (datetime.datetime.now() - datetime.timedelta(minutes=int(re.sub(r'[^0-9]*','',DT)))).strftime("%d.%m.%Y")
-        time = (datetime.datetime.now() - datetime.timedelta(minutes=int(re.sub(r'[^0-9]*','',DT)))).strftime("%H:%M")
+        date = (t - datetime.timedelta(minutes=int(re.sub(r'[^0-9]*','',DT)))).strftime("%d.%m.%Y")
+        time = (t - datetime.timedelta(minutes=int(re.sub(r'[^0-9]*','',DT)))).strftime("%H:%M")
     elif 'минуту ' in DT:
-        date = (datetime.datetime.now() - datetime.timedelta(minutes=1)).strftime("%d.%m.%Y")
-        time = (datetime.datetime.now() - datetime.timedelta(minutes=1)).strftime("%H:%M")
+        date = (t - datetime.timedelta(minutes=1)).strftime("%d.%m.%Y")
+        time = (t - datetime.timedelta(minutes=1)).strftime("%H:%M")
     elif 'час ' in DT:
-        date = (datetime.datetime.now() - datetime.timedelta(hours=1)).strftime("%d.%m.%Y")
-        time = (datetime.datetime.now() - datetime.timedelta(hours=1)).strftime("%H:%M")
+        date = (t - datetime.timedelta(hours=1)).strftime("%d.%m.%Y")
+        time = (t - datetime.timedelta(hours=1)).strftime("%H:%M")
     elif 'два часа' in DT:
-        date = (datetime.datetime.now() - datetime.timedelta(hours=2)).strftime("%d.%m.%Y")
-        time = (datetime.datetime.now() - datetime.timedelta(hours=2)).strftime("%H:%M")
+        date = (t - datetime.timedelta(hours=2)).strftime("%d.%m.%Y")
+        time = (t - datetime.timedelta(hours=2)).strftime("%H:%M")
     elif 'три часа' in DT:
-        date = (datetime.datetime.now() - datetime.timedelta(hours=3)).strftime("%d.%m.%Y")
-        time = (datetime.datetime.now() - datetime.timedelta(hours=3)).strftime("%H:%M")
+        date = (t - datetime.timedelta(hours=3)).strftime("%d.%m.%Y")
+        time = (t - datetime.timedelta(hours=3)).strftime("%H:%M")
     elif 'вчера ' in DT:
-        date = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%d.%m.%Y")
+        date = (t - datetime.timedelta(days=1)).strftime("%d.%m.%Y")
         time =  re.sub(r'.*в\s|\n', '', DT)
     elif 'сегодня' in DT:
-        date = (datetime.date.today()).strftime("%d.%m.%Y")
+        date = t.strftime("%d.%m.%Y")
         time =  re.sub(r'.*в\s|\n', '', DT)
     elif ' в ' in DT:
         date = re.sub(r'\sв.*','',DT)
-        date = date + ' ' + str(datetime.date.today().year)
+        date = date + ' ' + str(t.year)
         date = changeDate(re.sub('\n','',date))
         time = re.sub(r'.*в\s|\n', '', DT)
     else:
@@ -417,7 +419,7 @@ def changeDate(date):
 def findDT(DT):
     DT = makeDate(DT)
     changeDays = findChangeDays(DT.year)
-    if (datetime.datetime.now()>findChangeDays(datetime.datetime.now().year)[0])and(datetime.datetime.now()<findChangeDays(datetime.datetime.now().year)[1]):
+    if (t>findChangeDays(t.year)[0])and(t<findChangeDays(t.year)[1]):
         msc = DT + datetime.timedelta(hours=8)
 
         if (DT<=changeDays[0])or(DT>=changeDays[1]):  
@@ -638,34 +640,41 @@ def loadExtras():
         
 
 ##MAIN:
-print "Be sure, that your date and time on computer is right, because you can have wrong result. Language of vk.com is RUS, and there is nothing else, just wall without open messages"
-f = open(sys.argv[1], 'r')
-f2 = ''
-fway = ''
-doc = normalize()
-posts = findPosts()
-loadExtras()
-k = ''
-newPostTime = ''
+keys = ''
+arguments = []
 
-for post in posts:
-    addTags =  []
-    texxt = ''
-    tags = []
-    takePost(post)
-    '''
-db = sqlite3.connect("Diary/.extras/test.db")
-cur = db.cursor()
-cur.execute('SELECT * FROM tags;')
-print cur.fetchall()
-cur.execute('SELECT * FROM ways;')
-print cur.fetchall()
-cur.execute('SELECT * FROM connections;')
-print cur.fetchall()
-cur.close()
-db.close()'''
+for i in range(len(sys.argv)):
+    if '-' in sys.argv[i]:
+        keys = keys + re.sub(r'[+-]*', '', sys.argv[i])
+    if (i != 0)and(not '-' in sys.argv[i]):
+        arguments.append(sys.argv[i])
+        
+if 'h' in keys:
+    readme = open('README.txt', 'r')
+    
+    for line in readme:
+        print line
 
-f.close()
-## +at инструкция, добавить такой же тул для видео, поискать возможность увеличивать изображение кликом, и включать только одно аудио на одной странице
-##Время не сейчас, а время сохранения файла для версии с сохранением. Для селениума пометить, где нужно вернуть обратно.
+    readme.close()
+else:
+    print "Be sure, that your date and time on computer is right, because you can have wrong result. Language of vk.com is RUS, and there is nothing else, just wall without open messages"
+    f = open(sys.argv[1], 'r')
+    f2 = ''
+    fway = ''
+    doc = normalize()
+    posts = findPosts()
+    loadExtras()
+    k = ''
+    newPostTime = ''
+    t = datetime.datetime.fromtimestamp(os.path.getmtime(sys.argv[1])) ##For selenium change to .now
+
+    for post in posts:
+        addTags =  []
+        texxt = ''
+        tags = []
+        takePost(post)
+
+    f.close()
+##Поискать возможность увеличивать изображение кликом, и включать только одно аудио на одной странице. Добавлять теги аудио и т д после спрашивания.
+##Сделать выключение моего режима (летнее время, перевод в Московское)
 ##Селениум. Пока его нет, сделать версию для скачанных файлов (ориентир по дате обновления). Пометить, чтобы изменить потом обратно.

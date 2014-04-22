@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-import re, datetime, os, urllib, lxml.html, sqlite3
+import re, datetime, os, urllib, lxml.html, sqlite3, sys, filecmp, shutil
 from lxml import etree
 
 def findDT(time):
@@ -45,61 +45,232 @@ def findChangeDays(year):
 
 
 def takeTime():
-    ask = ''
+    if 'd' in keys:
+        ask = ''
     
-    while ask != 'Y' and ask != 'y': 
-        time = askTime()
+        while ask != 'Y' and ask != 'y': 
+            time = raw_input('Set your time in format dd.mm.yyyy hh:mm (time in 24-hour format): ')
 
-        while re.sub(r'[0123][0-9].[01][0-9].[0-9]{4} [012345][0-9]:[012345][0-9]', '', time) != '':
-            print "You have print something wrong. Try again"
-            time = askTime()
-    
-        if time == '':
-            ask = raw_input("You had chose default system time. Are you sure?(Y/N)")
-        else:
+            while re.sub(r'[0123][0-9].[01][0-9].[0-9]{4} [012345][0-9]:[012345][0-9]', '', time) != '':
+                print "You have print something wrong. Try again"
+                time = raw_input('Set your time in format dd.mm.yyyy hh:mm (time in 24-hour format): ')
+                
             ask = raw_input("Are you sure that time " + time + " is right?(Y/N)")
-        if (ask != 'Y')and(ask != 'y'):
-            print "Try again"
-
-    return time
-
-
-def askTime():
-    time = raw_input("Do you want to set time of your record (If not, it will be just system time)?(Y/N): ")
-    time = re.sub(r'^\s+|\s+$', '', time)
-    if (time == "Y")or(time == "y"):
-        time = raw_input('Set your time in format dd.mm.yyyy hh:mm (time in 24-hour format) or press "N" for default time: ')
-        if (time == "N")or(time == "n"):
-            time = ''
-    if (time == "N")or(time == "n"):
+            if (ask != 'Y')and(ask != 'y'):
+                print "Try again"
+    else:
         time = ''
 
     return time
 
 
+def askImages():
+    global images
+    images = []
+    image = ''
+    while re.sub('\s*','',image).lower() != "n":
+        image = raw_input("Enter link or fileway from this (!) folder. Use http:// for links. Use ../ to move out foulders. Then press enter. If you not interested in adding more pictures, press N and then Enter: ")
+        if re.sub('\s*','',image).lower() != "n" and image != '':
+
+            while not os.path.exists(image):
+                image = raw_input("File doesn't exist. Try again.\nEnter link or fileway from this (!) folder. Use http:// for links. Use ../ to move out foulders. Then press enter. If you not interested in adding more pictures, press N and then Enter: ")
+
+            if 'http' in image:
+                if 'i' in keys:
+                    fileway = chooseFileWay(image)
+                    print "loading picture"
+                    urllib.urlretrieve(image, fileway)
+                    doubling = checkForDoubles(fileway)
+                    if not doubling == "N":
+                        os.remove(fileway)
+                        fileway = doubling
+                    image = re.sub(r'Diary/.extras/Media/', '../../.extras/Media/', fileway)
+            if not 'http' in image:
+                doubling = checkForDoubles(image)
+                if doubling == "N":
+                    fileway = chooseFileWay(image)
+                    shutil.copy(image, fileway)
+                else:
+                    fileway = doubling
+   
+                image = re.sub(r'Diary', '../..', fileway)
+            
+            if not 'image' in addTags:
+                addTags.append('image') 
+
+            
+            images.append(image)    
+                    
+    return images
+
+
+def askAudio():
+    global audios
+    audio = ''
+    audios = []
+    while re.sub('\s*','',audio).lower() != "n":
+        audio = raw_input("Enter link or fileway from this (!) folder. Use http:// for links. Use ../ to move out foulders. Then press enter. If you not interested in adding more audios, press N and then Enter: ")
+        if re.sub('\s*','',audio).lower() != "n" and audio != '':
+
+            while not os.path.exists(audio):
+                audio = raw_input("\nFile doesn't exist. Try again.\nEnter link or fileway from this (!) folder. Use http:// for links. Use ../ to move out foulders. Then press enter. If you not interested in adding more audios, press N and then Enter: ")
+
+            audioname = raw_input("Enter name of this song, maybe author - whatever you want: ")
+            if 'http' in audio:
+                if 'i' in keys:
+                    fileway = chooseFileWay(audio)
+                    print "loading picture"
+                    urllib.urlretrieve(audio, fileway)
+                    doubling = checkForDoubles(fileway)
+                    if not doubling == "N":
+                        os.remove(fileway)
+                        fileway = doubling
+                    audio = re.sub(r'Diary/.extras/Media/', '../../.extras/Media/', fileway)
+            if not 'http' in audio:
+                doubling = checkForDoubles(audio)
+                if doubling == "N":
+                    fileway = chooseFileWay(audio)
+                    shutil.copy(audio, fileway)
+                else:
+                    fileway = doubling
+   
+                audio = re.sub(r'Diary', '../..', fileway)
+            
+            audio = audioname + '<br/>\n<audio controls>\n<source src="' + audio + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio><br/>\n'
+            if not 'audio' in addTags:
+                addTags.append('audio')
+           
+            audios.append(audio)    
+                    
+    return audios
+
+
+def askVideo():
+    global videos
+    video = ''
+    videos = []
+    while re.sub('\s*','',video).lower() != "n":
+        video = raw_input("Enter link or fileway from this (!) folder. Use http:// for links. Use ../ to move out foulders. Then press enter. If you not interested in adding more videos, press N and then Enter: ")
+        if re.sub('\s*','',video).lower() != "n" and video != '':
+
+            while not os.path.exists(video) and not 'http' in video:
+                video = raw_input("\nFile doesn't exist. Try again.\nEnter link or fileway from this (!) folder. Use http:// for links. Use ../ to move out foulders. Then press enter. If you not interested in adding more videos, press N and then Enter: ")
+                if 'http' in video:
+                    break
+
+            videoname = raw_input("Enter name of this video, maybe author - whatever you want: ")
+            if 'http' in video:
+                if 'e' in keys:
+                    fileway = chooseFileWay(video)
+                    print "loading video"
+                    urllib.urlretrieve(video, fileway)
+                    print "video downloaded"
+                    doubling = checkForDoubles(fileway)
+                    if not doubling == "N":
+                        os.remove(fileway)
+                        fileway = doubling
+                    video = re.sub(r'Diary/.extras/Media/', '../../.extras/Media/', fileway)
+                    video = videoname + '<br><video width="320" height="240" controls>\n<source src="' + video + '" type="video/mp4">\nYour browser does not support the video tag.\n</video><br>'
+                else:
+                    video = '<a href="' + video + '">Видео: "' + videoname + '"</a>'
+            if not 'http' in video:
+                doubling = checkForDoubles(video)
+                if doubling == "N":
+                    fileway = chooseFileWay(video)
+                    shutil.copy(video, fileway)
+                else:
+                    fileway = doubling
+   
+                video = re.sub(r'Diary', '../..', fileway)
+                video = videoname + '<br><video width="320" height="240" controls>\n<source src="' + video + '" type="video/mp4">\nYour browser does not support the video tag.\n</video><br>'
+            
+            if not 'video' in addTags:
+                addTags.append('video')
+           
+            videos.append(video)    
+                    
+    return videos
+
+
+def askTags():
+    ask = ''
+    while ask.lower() != 'y':
+        tags = raw_input("Print tags, use comma to divide it\nTAGS: ").lower()
+        tags = re.sub(r'\s{2,}', '\s', tags)
+        print "Here are your tags: ", tags, "."
+        ask = raw_input("Is it right(Y/N)?: ")
+
+    return tags
+
+
+def chooseFileWay(link):
+    n = re.search(r'[^/]+$', link)
+    name = re.split('\.', n.group(0))
+    name[0] = 0 
+    fileway = 'Diary/.extras/Media/' + str(name[0]) + '.' + str(name[1])
+
+    while os.path.exists(fileway):
+        name[0] = name[0] + 1
+        fileway = 'Diary/.extras/Media/' + str(name[0]) + '.' + str(name[1])
+   
+    return fileway
+
+def checkForDoubles(link):
+    files = os.listdir("Diary/.extras/Media")
+    doubling = "N"
+
+    for fle in files:
+        if not link == "Diary/.extras/Media/" + fle:
+            if filecmp.cmp(link, "Diary/.extras/Media/" + fle):
+                doubling = "Diary/.extras/Media/" + fle
+
+    return doubling
+
+
 def takePost():
-    global text,tags,time
-    time = takeTime()
+    global text,tags,time,images
     text = raw_input("Print text of your record. If you want to make paragraph, use <br/>. Also use all tags, that needed for text\n")
-    tags = raw_input("Print tags, use comma to divide it\nTAGS: ").lower()
-    tags = re.sub(r'\s{2,}', '\s', tags)
-    tags = re.sub(r'^\s|\s$|(?<=,)\s|\s(?=,)', '', tags)
+    if 'b' in keys:
+        images = askImages()
+    if 'c' in keys:
+        audios = askAudio()
+    if 'v' in keys:
+        videos = askVideo()
+    tags = askTags()
     tags = re.split(",", tags)
+    time = takeTime()
 
 
 def makePost():
-    global time
+    global time,audios,images
     twoDT = findDT(time)
     DT = twoDT[0]
     time = DT[1] 
     msc = twoDT[1]
     body = '<div class="post"><b>' + DT[0] + ' <div class="time"> ' + DT[1] + " </div> (" + msc[0] + ' ' + msc[1] + ' по Москве)</b><br/>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">' + text + "<br/>\n"
+    if 'b' in keys and not images == '' and not images == None:
+        for image in images:
+            body = body + '<img src="' + image + '"></img><br/>'
+    if 'c' in keys and not audios == '' and not audios == None:
+        body = body + '<div class="audio">'
+        
+        for audio in audios:
+            body = body + audio
+
+        body = body + '</div>'
+    if 'v' in keys and not videos == '' and not videos == None:
+        body = body + '<div class="video">'
+       
+        for video in videos:
+            body = body + video
+
+        body = body + '</div>'
     if not tags == '' and not tags == None:
         body = body + "TAGS: "
+
         for tag in tags:
             if tag != '':
                 body = body + tag + ', '
-
     body = re.sub(r',\s$', '', body) + '</div></div>'
  
     return body
@@ -219,15 +390,36 @@ def loadExtras():
     if not os.path.exists("Diary/.extras/Media/ava.jpg"):
         urllib.urlretrieve("http://cs5298.userapi.com/g32561651/a_ea42f7ac.jpg", "Diary/.extras/Media/ava.jpg")
 
+keys = ''
 
-text = ''
-tags = ''
-fway = ''
-loadExtras()
-takePost()
-body = makePost()
-if not tags == ['']:
-    addConnections(addTagsInDB(tags),addDayInDB())
+for i in range(len(sys.argv)):
+    if '-' in sys.argv[i]:
+        keys = keys + re.sub(r'[+-]*', '', sys.argv[i])
+
+if 'h' in keys:
+    readme = open('README.txt', 'r')
+    
+    for line in readme:
+        print line
+
+    readme.close()
+else:
+    text = ''
+    tags = ''
+    fway = ''
+    addTags = []
+    loadExtras()
+    takePost()
+
+    for tag in addTags:
+        if not tag in tags:
+            tags.append(tag)   
+  
+    body = makePost()
+    if not tags == ['']:
+        addConnections(addTagsInDB(tags),addDayInDB())
+    createFile()
+
 '''
 db = sqlite3.connect("Diary/.extras/test.db")
 cur = db.cursor()
@@ -238,5 +430,3 @@ print cur.fetchall()
 cur.execute('SELECT * FROM connections;')
 print cur.fetchall()
 cur.close()'''
-
-createFile()

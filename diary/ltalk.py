@@ -2,8 +2,6 @@
 
 import sys,re,os,shutil,urllib,datetime,sqlite3,filecmp,lxml.html
 from lxml import etree
-f = open(sys.argv[1], 'r')
-
 
 ##FUNCTIONS
 
@@ -122,7 +120,7 @@ def findDT(DT):
     
     DT = makeDate(DT)
     changeDays = findChangeDays(DT.year)
-    if (datetime.datetime.now()>findChangeDays(datetime.datetime.now().year)[0])and(datetime.datetime.now()<findChangeDays(datetime.datetime.now().year)[1]):
+    if (t>findChangeDays(t.year)[0])and(t<findChangeDays(t.year)[1]):
         msc = DT + datetime.timedelta(hours=8)
 
         if (DT<=changeDays[0])or(DT>=changeDays[1]):  
@@ -230,6 +228,7 @@ def findComments():
 
 def executeText(text):  
     global addTags
+    audio = ''
     if '<!-- video_end -->' in text:
         text = re.sub(r'<!-- video\[.{,350}"><input name="video_url" type="hidden" value="', '--VIDEO--', text)
         text = re.sub(r'"><img class="flag" src="[\./_a-zA-Z0-9]+" alt="Скачать" height="[0-9]+" width="[0-9]+">.{,600}end -->', '--/VIDEO--', text)
@@ -237,7 +236,7 @@ def executeText(text):
             addTags.append('video')
     if '<!-- quote[&gt;] -->' in text:
         text = re.sub(r'<!-- end_quote --><!-- quote\[&gt;\] -->','<br/>', text)
-        text = re.sub(r'(<br/>)*<!-- quote\[&gt;\] -->', ' --QUOTE-- ', text)     
+        text = re.sub(r'(<br>)*<!-- quote\[&gt;\] -->', ' --QUOTE-- ', text)     
         text = re.sub(r'<!-- end_quote -->', ' --/QUOTE-- ', text)
         if not 'quote' in addTags:
             addTags.append('quote')
@@ -254,6 +253,24 @@ def executeText(text):
         text = re.sub(r'\] -->.*<!-- img_end -->', '--/IMG--', text)
         if not 'image' in addTags:
             addTags.append('image')
+    if '" alt="Подкаст" title="Скачай и прослушай подкаст">' in text:
+        link = (re.findall(r'<a href="http://i[0-9]*.ltalk.ru/[0-9/]*.mp3" target="_blank" rel="nofollow" class="favicon_processed">[^<>]*</a>', text))[0]
+        text = text.replace(link, '')
+        name = re.sub(r'<[^<>]*>', '', link)
+        link = re.sub(r'<a href="|" target.*', '', link)
+        if 'a' in keys:
+            fileway = chooseFileWay(link)
+            print "Downloading audio for file", arg
+            urllib.urlretrieve(link, fileway)
+            print "Audio downloaded"
+            doubling = checkForDoubles(fileway)
+            if doubling == "N":
+                link = fileway
+            else:
+                link = doubling
+                os.remove(fileway)
+            link = re.sub(r'Diary','../..',link)
+        audio = '<div class="audio">' + name + '\n<audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio>' + '</div>\n'
     text = re.sub(r'<span class="u">', '<u>', text)
     text = re.sub(r'<span class="s">', '<s>', text)
     text = re.sub(r'</span><!--u-->', '</u>', text)
@@ -270,7 +287,10 @@ def executeText(text):
     text = re.sub(r'--/LINK--', '">Ссылка</a>', text)
     text = re.sub(r'--VIDEO--', '<iframe width="420" height="345" src="', text)
     text = re.sub(r'--/VIDEO--', '"></iframe>', text)
-    text = re.sub(r'(<br/>){3,}', '<br/><br/>', text)
+    text = re.compile(r'[\s\n]*<br>*[\s\n]*<br>*[\s\n]*', re.DOTALL).sub('<br>', text)
+    text = re.sub(r'(<br>){2,}', '<br>', text)
+    if not audio == '':
+         text = text + audio
 
     return text
 
@@ -328,23 +348,23 @@ def moveFiles():
     if (comms != [])and(comms != None):
         for comm in comms:
             tmp = tmp + comm[3]
-    
-    urls = re.findall('(?<=<img src=")http://[^"]+',tmp) 
-    urls2 = [] 
+    if 'i' in keys:
+        urls = re.findall('(?<=<img src=")http://[^"]+',tmp) 
+        urls2 = [] 
    
-    for url in urls:
-        if (not url in urls2) and (not '..' in url):
-            urls2.append(url)
+        for url in urls:
+            if (not url in urls2) and (not '..' in url):
+                urls2.append(url)
 
-    for url in urls2:
-        fileway = chooseFileWay(url)
-        urllib.urlretrieve(url, fileway)
-        doubling = checkForDoubles(fileway)
-        if doubling == "N":
-            replaceLinks(url, fileway)
-        else:
-            os.remove(fileway)
-            replaceLinks(url, doubling)
+        for url in urls2:
+            fileway = chooseFileWay(url)
+            urllib.urlretrieve(url, fileway)
+            doubling = checkForDoubles(fileway)
+            if doubling == "N":
+                replaceLinks(url, fileway)
+            else:
+                os.remove(fileway)
+                replaceLinks(url, doubling)
 
     tmp = re.sub('<img src="http://[^>]+', '', tmp)
     links = re.findall('(?<=<img src=")[^"]+', tmp)
@@ -389,7 +409,7 @@ def makeBody():
 
 def makeFile():
     f2 = open(postway,'w')
-    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:110px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n', etree.tostring(lxml.html.fromstring(body.decode("utf-8")), pretty_print=True, encoding="utf-8", method="html"), "</html></body>" ##Правильный вывод
+    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:110px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n', etree.tostring(lxml.html.fromstring(body.decode("utf-8")), pretty_print=True, encoding="utf-8", method="html"), "</html></body>"
     f2.close()
 
 
@@ -506,47 +526,55 @@ def executeFile():
 ##MAIN
 
 
-dateTime = ''
-addTags = []
-doc = normalize()
-loadExtras()
-comms = findComments() 
-splitDoc()
-title = findTitle()
-time = findTime()
-date = changeDate(findDate())
-DT = [date,time]
-DTs = findDT(DT)
-date = (DTs[0])[0]
-time = (DTs[0])[1]
-msc = DTs[1]
-avatar = findAvatar()
-text= findText()
-tags = findTags()
 
-fold = splitDateOnFolders()
-postway = createFoulders()
-moveFiles()
-body = makeBody()
-if tags != []:
-    addConnections(addTagsInDB(tags),addDayInDB())
-'''
-db = sqlite3.connect("Diary/.extras/test.db")
-cur = db.cursor()
-cur.execute('SELECT * FROM tags;')
-print cur.fetchall()
-cur.execute('SELECT * FROM ways;')
-print cur.fetchall()
-cur.execute('SELECT * FROM connections;')
-print cur.fetchall()
-cur.close()
-db.close()'''
-body = etree.tostring(lxml.html.fromstring(body.decode("utf-8")), pretty_print=True, encoding="utf-8", method="html")
-if os.path.exists(postway):
-    executeFile()
+keys = ''
+arguments = []
+
+for i in range(len(sys.argv)):
+    if '-' in sys.argv[i]:
+        keys = keys + re.sub(r'[+-]*', '', sys.argv[i])
+    if (i != 0)and(not '-' in sys.argv[i]):
+        arguments.append(sys.argv[i])
+        
+if 'h' in keys:
+    readme = open('README.txt', 'r')
+    
+    for line in readme:
+        print line
+
+    readme.close()
 else:
-    makeFile()
 
-f.close()
-
-##Сделать, чтобы работало с файлами из других директорий.
+    for arg in arguments:
+        f = open(arg, 'r')
+        t = datetime.datetime.fromtimestamp(os.path.getmtime(sys.argv[1])) ##For selenium change to .now
+        dateTime = ''
+        addTags = []
+        doc = normalize()
+        loadExtras()
+        comms = findComments() 
+        splitDoc()
+        title = findTitle()
+        time = findTime()
+        date = changeDate(findDate())
+        DT = [date,time]
+        DTs = findDT(DT)
+        date = (DTs[0])[0]
+        time = (DTs[0])[1]
+        msc = DTs[1]
+        avatar = findAvatar()
+        text= findText()
+        tags = findTags()
+        fold = splitDateOnFolders()
+        postway = createFoulders()
+        moveFiles()
+        body = makeBody()
+        if tags != []:
+            addConnections(addTagsInDB(tags),addDayInDB())
+        body = etree.tostring(lxml.html.fromstring(body.decode("utf-8")), pretty_print=True, encoding="utf-8", method="html")
+        if os.path.exists(postway):
+            executeFile()
+        else:
+            makeFile()
+        f.close()
+##Сделать, чтобы работало с файлами из других директорий(добавлять к адресу обрезок от аргумента).
