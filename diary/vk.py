@@ -123,7 +123,13 @@ def makeComments(post,body):
             text = findImages(comm,text)
             text = findAudio(comm,text)
             text = findVideo(comm,text)
-            comment = '<div class="comm">' + ava + '<div style="margin-left:"50px";display:inline;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + ' (' + msc[0] + ' ' + msc[1] + ' по Москве)' + '<br/>' + text + '</div></div>\n'
+            if 'z' in keys:
+                if place == 'L':
+                    comment = '<div class="comm">' + ava + '<div style="margin-left:"50px";display:inline;"><hr>.....<b>' + nic + '</b> ' + msc[0] + ' ' + msc[1] + ' (' + DT[0] + ' ' + DT[1] + ' DT)' + '<br/>' + text + '</div></div>\n'
+                else:
+                    comment = '<div class="comm">' + ava + '<div style="margin-left:"50px";display:inline;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + ' (' + msc[0] + ' ' + msc[1] + ' по Москве)' + '<br/>' + text + '</div></div>\n' 
+            else:
+                comment = '<div class="comm">' + ava + '<div style="margin-left:"50px";display:inline;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + '<br/>' + text + '</div></div>\n'
             body = body + comment
   
         body = body + '</div>'
@@ -353,12 +359,24 @@ def findDateAndTime(post,body):
         DTs = findDT(DT)
         DT = DTs[0]
         msc = DTs[1]
-        makeWay(DT)
-        newPostTime = DT[1]
-        if not k == "not accurate":
-            body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве) </b><br/> \n'
+        if place == 'L':
+            makeWay(msc)
         else:
-            body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве)</b>\n<sup>Время не было указано, может быть неточность не более, чем в +24часа</sup><br/>\n'
+            makeWay(DT)
+        newPostTime = DT[1]
+        if 'z' in keys:
+            if place == 'L':
+                if not k == "not accurate":
+                    body = body + '<b>' + msc[0] + ' <div class="time">' + msc[1] + '</div> (' + DT[0] + ' ' + DT[1] + ' DC) </b><br/> \n'
+                else:
+                    body = body + '<b>' + msc[0] + ' <div class="time">' + msc[1] + '</div> (' + DT[0] + ' ' + DT[1] + ' DC)</b>\n<sup>Время не было указано, может быть неточность не более, чем в 24часа</sup><br/>\n'
+            else:
+                if not k == "not accurate":
+                    body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве) </b><br/> \n'
+                else:
+                    body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве)</b>\n<sup>Время не было указано, может быть неточность не более, чем в +24часа</sup><br/>\n'
+        else:
+            body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div></b><br/>\n'
 
     return body
 
@@ -418,22 +436,36 @@ def changeDate(date):
 
 def findDT(DT):
     DT = makeDate(DT)
-    changeDays = findChangeDays(DT.year)
-    if (t>findChangeDays(t.year)[0])and(t<findChangeDays(t.year)[1]):
-        msc = DT + datetime.timedelta(hours=8)
+    if not 'z' in keys:
+        DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
+        msc = []
+        twoDT = [DT,msc]
 
-        if (DT<=changeDays[0])or(DT>=changeDays[1]):  
-            DT = DT - datetime.timedelta(hours=1)         
+        return twoDT
     else:
-        msc = DT + datetime.timedelta(hours=9)
+        breakMoment = datetime.datetime(2013,9,26,10)
+        changeDays = findChangeDays(DT.year)
+        if (t>findChangeDays(t.year)[0])and(t<findChangeDays(t.year)[1]):
+            msc = DT + datetime.timedelta(hours=8)
+                
+            if (DT<=changeDays[0])or(DT>=changeDays[1]):  
+                DT = DT - datetime.timedelta(hours=1)         
+        else:
+            msc = DT + datetime.timedelta(hours=9)
+               
+            if (DT>changeDays[0])and(DT<changeDays[1]):  
+                DT = DT + datetime.timedelta(hours=1)
+        if DT < breakMoment:
+            global place
+            if place == 0:
+                place = 'L'
+            else:
+                place = 'N'
+        DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
+        msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
+        twoDT = [DT,msc]
 
-        if (DT>changeDays[0])and(DT<changeDays[1]):  
-            DT = DT + datetime.timedelta(hours=1)
-    DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
-    msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
-    twoDT = [DT,msc]
-
-    return twoDT
+        return twoDT
           
 
 def findChangeDays(year):
@@ -485,48 +517,47 @@ def takeTags(tags):
         tagslist.append(newtag)
     
     tags = tagslist
+    if 't' in keys:
+        taglist = ''
+  
+        for tag in tags:
+            taglist = taglist + tag + ','
+        
+        taglist = re.sub(r', $|,$', '', taglist)
+        ask = ''
+
+        while (ask != 'Y')and(ask != 'y'):
+            inptags = ''
+            print "Your text is:\n", texxt + '\n'
+            ask = raw_input("Your tags is: " + taglist + ". Do you want to change it?(Y/N): ")
+            ask = re.sub(r'^\s*|\s+$', '', ask)
+            ask = re.sub(r'\s{2,}', ' ', ask)
+            if (ask != 'N')and(ask != 'n'):
+                inptags = raw_input("Write new tags. Use comma to divide them. If you don't want change tags, then continue. You'll have a chance to change your decision.\nTAGS: ")
+                inptags = re.sub(r'^\s*|\s+$', '', inptags)
+                inptags = re.sub(r'\s{2,}', ' ', inptags)
+                ask = raw_input("Your tags is: " + inptags + ". Is it right?(Y/N): ")
+                ask = re.sub(r'^\s*|\s+$', '', ask)
+                ask = re.sub(r'\s{2,}', ' ', ask)
+            else:
+                ask = raw_input("You are not going to change your tags, right?(Y/N): ")
+                ask = re.sub(r'^\s*|\s+$', '', ask)
+                ask = re.sub(r'\s{2,}', ' ', ask)
+
+        if not inptags == '':
+            inptags = re.sub(r'\s+(?=,)|(?<=,)\s+', '', inptags)
+            inptags = re.split(',',inptags)
+            tags = []
+
+            for tag in inptags:
+                tags.append(tag)
+
 
     if addTags != []: 
 
         for tag in addTags:
             if not tag in tags:
                 tags.append(tag)
-
-    if len(sys.argv) > 2:
-        if sys.argv[2] == '-t':
-            taglist = ''
-      
-            for tag in tags:
-                taglist = taglist + tag + ','
-        
-            taglist = re.sub(r', $|,$', '', taglist)
-            ask = ''
-
-            while (ask != 'Y')and(ask != 'y'):
-                inptags = ''
-                print "Your text is:\n", texxt + '\n'
-                ask = raw_input("Your tags is: " + taglist + ". Do you want to change it?(Y/N): ")
-                ask = re.sub(r'^\s*|\s+$', '', ask)
-                ask = re.sub(r'\s{2,}', ' ', ask)
-                if (ask != 'N')and(ask != 'n'):
-                    inptags = raw_input("Write new tags. Use comma to divide them. If you don't want change tags, then continue. You'll have a chance to change your decision.\nTAGS: ")
-                    inptags = re.sub(r'^\s*|\s+$', '', inptags)
-                    inptags = re.sub(r'\s{2,}', ' ', inptags)
-                    ask = raw_input("Your tags is: " + inptags + ". Is it right?(Y/N): ")
-                    ask = re.sub(r'^\s*|\s+$', '', ask)
-                    ask = re.sub(r'\s{2,}', ' ', ask)
-                else:
-                    ask = raw_input("You are not going to change your tags, right?(Y/N): ")
-                    ask = re.sub(r'^\s*|\s+$', '', ask)
-                    ask = re.sub(r'\s{2,}', ' ', ask)
-
-            if not inptags == '':
-                inptags = re.sub(r'\s+(?=,)|(?<=,)\s+', '', inptags)
-                inptags = re.split(',',inptags)
-                tags = []
-
-                for tag in inptags:
-                    tags.append(tag)
         
     return tags
 
@@ -674,9 +705,9 @@ else:
             addTags =  []
             texxt = ''
             tags = []
+            place = 0
             takePost(post)
 
         f.close()
-##Поискать возможность увеличивать изображение кликом, и включать только одно аудио на одной странице. Добавлять теги аудио и т д после спрашивания.
-##Сделать выключение моего режима (летнее время, перевод в Московское)
-##Селениум. Пока его нет, сделать версию для скачанных файлов (ориентир по дате обновления). Пометить, чтобы изменить потом обратно.
+##Добавлять теги аудио и т д после спрашивания.
+##Селениум.

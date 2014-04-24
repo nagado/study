@@ -140,7 +140,10 @@ def findDT(DT):
                 DT = DT + datetime.timedelta(hours=1)
         if DT < breakMoment:
             global place
-            place = 'L'
+            if place = 0:
+                place = 'L'
+            else:
+                place = place + 1
         DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
         msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
         twoDT = [DT,msc]
@@ -579,7 +582,7 @@ else:
         f = open(arg, 'r')
         t = datetime.datetime.fromtimestamp(os.path.getmtime(sys.argv[1])) ##For selenium change to .now
         dateTime = ''
-        place = ''
+        place = 0
         addTags = []
         doc = normalize()
         loadExtras()
@@ -608,4 +611,3 @@ else:
         else:
             makeFile()
         f.close()
-##Сделать, чтобы работало с файлами из других директорий(добавлять к адресу обрезок от аргумента).
