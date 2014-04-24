@@ -316,10 +316,10 @@ def downloadFile(url):
 
 
 def moveFile(link):
-    doubling = checkForDoubles(link)
+    doubling = checkForDoubles(argway + link)
     if doubling == "N":
         fileway = chooseFileWay(link)
-        shutil.copy(link, fileway)
+        shutil.copy(argway + link, fileway)
     else:
         fileway = doubling
 
@@ -657,24 +657,26 @@ if 'h' in keys:
 
     readme.close()
 else:
-    print "Be sure, that your date and time on computer is right, because you can have wrong result. Language of vk.com is RUS, and there is nothing else, just wall without open messages"
-    f = open(sys.argv[1], 'r')
-    f2 = ''
-    fway = ''
-    doc = normalize()
-    posts = findPosts()
-    loadExtras()
-    k = ''
-    newPostTime = ''
-    t = datetime.datetime.fromtimestamp(os.path.getmtime(sys.argv[1])) ##For selenium change to .now
+    for arg in arguments:
+        print "Be sure, that your date and time on computer is right, because you can have wrong result. Language of vk.com is RUS, and there is nothing else, just wall without open messages"
+        f = open(arg, 'r')
+        argway = re.sub(r'[^/]+$', '', arg)
+        f2 = ''
+        fway = ''
+        doc = normalize()
+        posts = findPosts()
+        loadExtras()
+        k = ''
+        newPostTime = ''
+        t = datetime.datetime.fromtimestamp(os.path.getmtime(arg)) ##For selenium change to .now
 
-    for post in posts:
-        addTags =  []
-        texxt = ''
-        tags = []
-        takePost(post)
+        for post in posts:
+            addTags =  []
+            texxt = ''
+            tags = []
+            takePost(post)
 
-    f.close()
+        f.close()
 ##Поискать возможность увеличивать изображение кликом, и включать только одно аудио на одной странице. Добавлять теги аудио и т д после спрашивания.
 ##Сделать выключение моего режима (летнее время, перевод в Московское)
 ##Селениум. Пока его нет, сделать версию для скачанных файлов (ориентир по дате обновления). Пометить, чтобы изменить потом обратно.

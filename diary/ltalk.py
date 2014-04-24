@@ -376,10 +376,10 @@ def moveFiles():
             links2.append(link)           
 
     for link in links2:
-        doubling = checkForDoubles(link)
+        doubling = checkForDoubles(argway + link)
         if doubling == "N":
             fileway = chooseFileWay(link)
-            shutil.copy(link, fileway)
+            shutil.copy(argway + link, fileway)
             replaceLinks(link, fileway)
         else:
             replaceLinks(link, doubling)
@@ -399,7 +399,7 @@ def makeBody():
         body = body + '<div class="comments">'
 
         for comm in comms:
-            body = body + '<div class="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + ' (' + comm[5] + ' ' + comm[6] + ' по Москве)' + comm[4] + '</div></div>\n' 
+            body = body + '<div class="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + ' (' + comm[5] + ' ' + comm[6] + ' по Москве)<br/>\n' + comm[4] + '</div></div>\n' 
         body = body + '</div>'
 
     body = body + "</div>"
@@ -546,6 +546,7 @@ if 'h' in keys:
 else:
 
     for arg in arguments:
+        argway = re.sub(r'[^/]+$', '', arg)
         f = open(arg, 'r')
         t = datetime.datetime.fromtimestamp(os.path.getmtime(sys.argv[1])) ##For selenium change to .now
         dateTime = ''
