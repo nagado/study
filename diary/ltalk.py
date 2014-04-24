@@ -119,22 +119,33 @@ def changeDate(date):
 def findDT(DT):
     
     DT = makeDate(DT)
-    changeDays = findChangeDays(DT.year)
-    if (t>findChangeDays(t.year)[0])and(t<findChangeDays(t.year)[1]):
-        msc = DT + datetime.timedelta(hours=8)
+    if not 'z' in keys:
+        DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
+        msc = []
+        twoDT = [DT,msc]
 
-        if (DT<=changeDays[0])or(DT>=changeDays[1]):  
-            DT = DT - datetime.timedelta(hours=1)         
+        return twoDT
     else:
-        msc = DT + datetime.timedelta(hours=9)
+        breakMoment = datetime.datetime(2013,9,26,10)
+        changeDays = findChangeDays(DT.year)
+        if (t>findChangeDays(t.year)[0])and(t<findChangeDays(t.year)[1]):
+            msc = DT + datetime.timedelta(hours=8)
+               
+            if (DT<=changeDays[0])or(DT>=changeDays[1]):  
+                DT = DT - datetime.timedelta(hours=1)         
+        else:
+            msc = DT + datetime.timedelta(hours=9)
+                 
+            if (DT>changeDays[0])and(DT<changeDays[1]):  
+                DT = DT + datetime.timedelta(hours=1)
+        if DT < breakMoment:
+            global place
+            place = 'L'
+        DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
+        msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
+        twoDT = [DT,msc]
 
-        if (DT>changeDays[0])and(DT<changeDays[1]):  
-            DT = DT + datetime.timedelta(hours=1)
-    DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
-    msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
-    twoDT = [DT,msc]
-
-    return twoDT
+        return twoDT
           
 
 def findChangeDays(year):
@@ -219,8 +230,11 @@ def findComments():
             text = executeText(text)
             n1 = n1 + 6
             n2 = n2 + 6
-
-            comm = [nic, date, time, avatar, text, msc[0], msc[1]]
+            
+            if 'z' in keys:
+                comm = [nic, date, time, avatar, text, msc[0], msc[1]]
+            else:
+                comm = [nic, date, time, avatar, text]
             output.append(comm)
         
         return output
@@ -297,8 +311,11 @@ def executeText(text):
 
 def splitDateOnFolders():
 
-    global date
-    fold = re.split('\.', date) 
+    global date,msc
+    if place == 'L' and 'z' in keys:
+        fold = re.split('\.', msc[0])
+    else:
+        fold = re.split('\.', date) 
     
     return fold
 
@@ -386,7 +403,13 @@ def moveFiles():
 
 
 def makeBody():
-    body = '<div class="post"><b>"' + title + '" ' + date + ' <div class="time"> ' + time + " </div> (" + msc[0] + " " + msc[1] + "  по Москве) </b><br/>\n" + avatar + '\n<div class="text">' + text + "<br/>\n"
+    if 'z' in keys:
+        if place == 'L':
+            body = '<div class="post"><b>"' + title + '" ' + msc[0] + ' <div class="time"> ' + msc[1] + " </div> (" + date + " " + time + " DC) </b><br/>\n" + avatar + '\n<div class="text">' + text + "<br/>\n"
+        else:
+            body = '<div class="post"><b>"' + title + '" ' + date + ' <div class="time"> ' + time + " </div> (" + msc[0] + " " + msc[1] + "  по Москве) </b><br/>\n" + avatar + '\n<div class="text">' + text + "<br/>\n"
+    else:
+        body = '<div class="post"><b>"' + title + '" ' + date + ' <div class="time"> ' + time + " </div></b><br/>\n" + avatar + '\n<div class="text">' + text + "<br/>\n"
     if '<a class="tag2"' in doc[2]:
         body = body + '<br/>TAGS:'
 
@@ -399,7 +422,13 @@ def makeBody():
         body = body + '<div class="comments">'
 
         for comm in comms:
-            body = body + '<div class="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + ' (' + comm[5] + ' ' + comm[6] + ' по Москве)<br/>\n' + comm[4] + '</div></div>\n' 
+            if 'z' in keys:
+                if place == 'L':
+                    body = body + '<div class="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[5] + ' ' + comm[6] + ' (' + comm[1] + ' ' + comm[2] + ' DC)<br/>\n' + comm[4] + '</div></div>\n' 
+                else:
+                    body = body + '<div class="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + ' (' + comm[5] + ' ' + comm[6] + ' по Москве)<br/>\n' + comm[4] + '</div></div>\n' 
+            else:
+                body = body + '<div class="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + '<br/>\n' + comm[4] + '</div></div>\n' 
         body = body + '</div>'
 
     body = body + "</div>"
@@ -550,6 +579,7 @@ else:
         f = open(arg, 'r')
         t = datetime.datetime.fromtimestamp(os.path.getmtime(sys.argv[1])) ##For selenium change to .now
         dateTime = ''
+        place = ''
         addTags = []
         doc = normalize()
         loadExtras()

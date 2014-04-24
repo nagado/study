@@ -13,6 +13,8 @@ Before key must be minus(-), or program won't recognize it. You can write any nu
  -t  - This key says that you want edit your tags list for each record. Programm will show you text, and tags for it (tags audio, video, image added automatically, if post have it), and ask, if you wanna change tags.
  -v  - Key only for new.py. This key require program ask you for videos. If 'e' added, video will downloaded from links. Some video won't be played in your browser because of its type.
 If you don't like default avatar, just go in "Diary/.exstras/Media", and change image "ava.jpg" on any other image, but name must still be "ava.jpg" 
+ -z  - This key only for Washington DC zone, it translate time in summer/winter, also it translate data before 26.09.2013 10:00(US time) in Moscow time (DC time in braces, folders made by msc time), and reverse after this date. If not added, time won't change at all.
+ 
 
 For more information e-mail me: nagado@yandex.ru
 Thank you for using my program.
