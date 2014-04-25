@@ -2,7 +2,7 @@ You can use ltalk.py and vk.py for downloaded html pages, to add them in diary (
 
 Special keys:
 Before key must be minus(-), or program won't recognize it. You can write any number of keys after minus, if you don't use spaces between them
- -a  - This key require program download audios from internet. Without this key audio will be just in link, so if something in real link have changed (vk, for example, changes it really often), you won't be able to listen it.
+ -a  - Download audios from internet. 
  -b  - (new.py only!) Ask for pictures for post. Links must show to actaul attachment!
  -c  - (new.py only!) Ask for audios for post. Links must show to actaul attachment!
  -d  - (new.py only!) Ask for time of your post. If not added, it takes time from your system. (NOTE: ADD IT TO VK!)
