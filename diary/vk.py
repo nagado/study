@@ -382,7 +382,7 @@ def findDateAndTime(post,body):
 
 
 def translateDate(DT):
-    global k,t
+    global k,t,zz
     k = 'actual'
     if ('секунд' in DT)or('только что' in DT):
         date = t.strftime("%d.%m.%Y")
@@ -416,7 +416,19 @@ def translateDate(DT):
     else:
         date = changeDate(DT)
         time = ''
-        k = "not accurate"
+        if 'd' in keys and zz == 0:
+            ask = ''
+            print "\nDate is: ", date            
+
+            while ask != 'y':
+                time = raw_input("Enter time in format hh:mm: ")
+                time = re.sub(r'(?<=[012345][0-9]:[012345][0-9]).*|.*(?=[012345][0-9]:[012345][0-9])', '', time)
+                print "Your time is ", time, "."
+                ask = re.sub(r'\s', '', raw_input("Right?(y/n)")).lower()
+            
+            zz = 1
+        else:
+            k = "not accurate"
     DT = [date, time] 
 
     return DT
@@ -528,7 +540,7 @@ def takeTags(tags):
 
         while (ask != 'Y')and(ask != 'y'):
             inptags = ''
-            print "Your text is:\n", texxt + '\n'
+            print "\nYour text is:\n", texxt + '\n'
             ask = raw_input("Your tags is: " + taglist + ". Do you want to change it?(Y/N): ")
             ask = re.sub(r'^\s*|\s+$', '', ask)
             ask = re.sub(r'\s{2,}', ' ', ask)
@@ -706,6 +718,7 @@ else:
             texxt = ''
             tags = []
             place = 0
+            zz = 0
             takePost(post)
 
         f.close()
