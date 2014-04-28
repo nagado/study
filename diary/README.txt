@@ -5,7 +5,7 @@ Before key must be minus(-), or program won't recognize it. You can write any nu
  -a  - Download audios from internet. 
  -b  - (new.py only!) Ask for pictures for post. Links must show to actaul attachment!
  -c  - (new.py only!) Ask for audios for post. Links must show to actaul attachment!
- -d  - (new.py only!) Ask for time of your post. If not added, it takes time from your system. (NOTE: ADD IT TO VK!)
+ -d  - Ask for time of your post. If not added, it takes time from your system. Use in vk for posta not in this year
  -e  - (new.py only!) Video will downloaded from internet. You must understand, that videos can have big size.
  -f  - Arguments is a folders, where all .html-type files must be executed
  -h  - Help. Prints this file 
