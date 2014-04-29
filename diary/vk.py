@@ -264,12 +264,14 @@ def findAudio(el, body):
         for audio in audios:
             link = re.compile(r'^.*value="(?=http://)|(?<=.mp3).*',re.DOTALL).sub('',audio)
             if 'value="http://' not in audio:
+                audio = re.compile(r'^.*(?=<div class="title_wrap fl_l")|<[^<>]*>', re.DOTALL).sub('', audio)
+                body = body + audio + '<br/>\n'
                 continue
             if 'a' in keys:
                 link = downloadFile(link)
             audio = re.compile(r'^.*(?=<div class="title_wrap fl_l")|<[^<>]*>', re.DOTALL).sub('', audio)
             body = body + audio + '<br/>\n<audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio><br/>\n'
-            if not 'audio' in addTags:
+        if not 'audio' in addTags:
                 addTags.append('audio')
 
         body = body + '</div><br/>\n'

@@ -247,7 +247,7 @@ def makePost():
     DT = twoDT[0]
     time = DT[1] 
     msc = twoDT[1]
-    body = '<div class="post"><b>' + DT[0] + ' <div class="time"> ' + DT[1] + " </div> (" + msc[0] + ' ' + msc[1] + ' по Москве)</b><br/>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">' + text + "<br/>\n"
+    body = '<div class="post"><b>' + DT[0] + ' <div class="time">' + DT[1] + "</div> (" + msc[0] + ' ' + msc[1] + ' по Москве)</b><br/>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">' + text + "<br/>\n"
     if 'b' in keys and not images == '' and not images == None:
         for image in images:
             body = body + '<img src="' + image + '"></img><br/>'
@@ -359,7 +359,13 @@ def createFile():
             posts = pstt.xpath("//div[@class='post']")   
 
             for post in posts:
+                post = etree.tostring(post, pretty_print=True, encoding='utf-8')
+                print "POSTTTTTTTTTTTTTTTTTTT", post, "ENDDDDDDDDDDDDDD"
+                post = lxml.html.fromstring(post)
                 postTime = post.xpath("//div[@class='time']")
+                for pstm in postTime:
+                    print etree.tostring(pstm, pretty_print=True, encoding='utf-8', method="html")
+                print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1'
                 postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8')
                 postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
                 postTime = re.split(':',postTime)
