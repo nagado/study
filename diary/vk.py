@@ -135,7 +135,14 @@ def makeComments(post,body):
             listOfComms.append(comment)
 
         if numcomm > 3:
-            body = body + '<a id="displayText" href="javascript:toggle();">Показать комментарии (' + str(numcomm - 3) + ')</a>\n<div id="toggleText" style="display: none">'
+            JSid = 0
+            if os.path.exists(fway + '.html'): 
+                ff = open(fway + '.html', 'r').read()
+
+                while '<a id="displayText' + str(JSid) in ff:
+                    JSid = JSid + 1
+
+            body = body + '<a id="displayText' + str(JSid) + '" href="javascript:toggle('+ str(JSid) + ');">Показать комментарии (' + str(numcomm - 3) + ')</a>\n<div id="toggleText' + str(JSid) + '" style="display: none">'
             for i in range(0, numcomm):
                 if i == numcomm - 3:
                     body = body + "</div>"
@@ -660,7 +667,7 @@ def createPost(body):
         f2 = open(fway + '.html', 'r')
         pst = f2.read()
         f2.close()
-        if not body in pst:
+        if not re.sub(r'<a id="displayText[0-9*]" href="javascript:toggle([0-9]*);">|<div id="toggleText[0-9]*"', '', body) in re.sub(r'<a id="displayText[0-9*]" href="javascript:toggle([0-9]*);">|<div id="toggleText[0-9]*"', '', pst):
             maintime = re.split(':',newPostTime)
             maintime = datetime.time(int(maintime[0]),int(maintime[1]))
             pstt = lxml.html.fromstring(pst) 
@@ -704,7 +711,7 @@ def loadExtras():
         style.close()
     if not os.path.exists("Diary/.extras/script.js"):
         script = open("Diary/.extras/script.js", 'w')
-        print >>script, 'function toggle() {\n	var ele = document.getElementById("toggleText");\n	var text = document.getElementById("displayText");\n	if(ele.style.display == "block") {\n    		ele.style.display = "none";\n		text.innerHTML = "Показать комментарии";\n  	}\n	else {\n		ele.style.display = "block";\n		text.innerHTML = "Скрыть комментарии";\n	}\n} '
+        print >>script, 'function toggle(id) {\n	var ele = document.getElementById("toggleText" + id);\n	var text = document.getElementById("displayText" + id);\n	if(ele.style.display == "block") {\n    		ele.style.display = "none";\n		text.innerHTML = "Показать комментарии";\n  	}\n	else {\n		ele.style.display = "block";\n		text.innerHTML = "Скрыть комментарии";\n	}\n} '
         script.close()
         
 

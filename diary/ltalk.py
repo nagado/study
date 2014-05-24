@@ -427,7 +427,15 @@ def makeBody():
         body = body + '<div id="comments">'
         numcomm = len(comms)
         if numcomm > 3:
-            body = body + '<a id="displayText" href="javascript:toggle();">Показать комментарии (' + str(numcomm - 3) + ')</a>\n<div id="toggleText" style="display: none">'
+            JSid = 0
+            if os.path.exists(postway): 
+                ff = open(postway, 'r').read()
+
+                while '<a id="displayText' + str(JSid) in ff:
+                    JSid = JSid + 1
+
+            body = body + '<a id="displayText' + str(JSid) + '" href="javascript:toggle(' + str(JSid) + ');">Показать комментарии (' + str(numcomm - 3) + ')</a>\n<div id="toggleText' + str(JSid) + '" style="display: none">'
+
         for comm in comms:
             numcomm = numcomm - 1
             if numcomm == 2:
@@ -439,6 +447,7 @@ def makeBody():
                     body = body + '<div id="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + ' (' + comm[5] + ' ' + comm[6] + ' по Москве)<br/>\n' + comm[4] + '</div></div>\n' 
             else:
                 body = body + '<div id="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + '<br/>\n' + comm[4] + '</div></div>\n' 
+
         body = body + '</div>'
 
     body = body + "</div>"
@@ -534,7 +543,7 @@ def loadExtras():
         style.close() 
     if not os.path.exists("Diary/.extras/script.js"):
         script = open("Diary/.extras/script.js", 'w')
-        print >>script, 'function toggle() {\n	var ele = document.getElementById("toggleText");\n	var text = document.getElementById("displayText");\n	if(ele.style.display == "block") {\n    		ele.style.display = "none";\n		text.innerHTML = "Показать комментарии";\n  	}\n	else {\n		ele.style.display = "block";\n		text.innerHTML = "Скрыть комментарии";\n	}\n} '
+        print >>script, 'function toggle(id) {\n	var ele = document.getElementById("toggleText" + id);\n	var text = document.getElementById("displayText" + id);\n	if(ele.style.display == "block") {\n    		ele.style.display = "none";\n		text.innerHTML = "Показать комментарии";\n  	}\n	else {\n		ele.style.display = "block";\n		text.innerHTML = "Скрыть комментарии";\n	}\n} '
         script.close()
 
 
@@ -544,8 +553,7 @@ def executeFile():
     f2 = open(postway, 'r')
     pst = f2.read()
     f2.close()
-    
-    if not body in pst:
+    if not re.sub(r'<a id="displayText[0-9*]" href="javascript:toggle([0-9]*);">|<div id="toggleText[0-9]*"', '', body) in re.sub(r'<a id="displayText[0-9*]" href="javascript:toggle([0-9]*);">|<div id="toggleText[0-9]*"', '', pst):
         if place == "L":
             maintime = re.split(':',msc[1])
         else:
