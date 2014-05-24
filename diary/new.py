@@ -13,20 +13,27 @@ def findDT(time):
         DT = datetime.datetime(int(date[2]),int(date[1]),int(date[0]),int(time[0]),int(time[1]))
         
     makeWay(str(DT.strftime("%d.%m.%Y")))
-    changeDays = findChangeDays(DT.year)
-    if (datetime.datetime.now()>findChangeDays(datetime.datetime.now().year)[0])and(datetime.datetime.now()<findChangeDays(datetime.datetime.now().year)[1]):
-        msc = DT + datetime.timedelta(hours=8)
-        if (DT<=changeDays[0])or(DT>=changeDays[1]):  
-            DT = DT - datetime.timedelta(hours=1)         
-    else:
-        msc = DT + datetime.timedelta(hours=9)
-        if (DT>changeDays[0])and(DT<changeDays[1]):  
-            DT = DT + datetime.timedelta(hours=1)
-    DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
-    msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
-    twoDT = [DT,msc]
+    if 'z' in keys:
+        changeDays = findChangeDays(DT.year)
+        if (datetime.datetime.now()>findChangeDays(datetime.datetime.now().year)[0])and(datetime.datetime.now()<findChangeDays(datetime.datetime.now().year)[1]):
+            msc = DT + datetime.timedelta(hours=8)
+            if (DT<=changeDays[0])or(DT>=changeDays[1]):  
+                DT = DT - datetime.timedelta(hours=1)         
+        else:
+            msc = DT + datetime.timedelta(hours=9)
+            if (DT>changeDays[0])and(DT<changeDays[1]):  
+                DT = DT + datetime.timedelta(hours=1)
+        DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
+        msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
+        twoDT = [DT,msc]
 
-    return twoDT
+        return twoDT
+
+    else:
+        DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
+  
+        return DT
+
 
 def findChangeDays(year):
     fallDay = datetime.datetime(year,11,1)
@@ -243,11 +250,16 @@ def takePost():
 
 def makePost():
     global time,audios,images
-    twoDT = findDT(time)
-    DT = twoDT[0]
-    time = DT[1] 
-    msc = twoDT[1]
-    body = '<div class="post"><b>' + DT[0] + ' <div class="time">' + DT[1] + "</div> (" + msc[0] + ' ' + msc[1] + ' по Москве)</b><br/>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">' + text + "<br/>\n"
+    if 'z' in keys:
+        twoDT = findDT(time)
+        DT = twoDT[0]
+        time = DT[1] 
+        msc = twoDT[1]
+        body = '<div class="post"><b>' + DT[0] + ' <div class="time">' + DT[1] + "</div> (" + msc[0] + ' ' + msc[1] + ' по Москве)</b><br/>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">' + text + "<br/>\n"
+    else:
+        DT = findDT(time)
+        time = DT[1]
+        body = '<div class="post"><b>' + DT[0] + '<div class="time"> ' + DT[1] + '</div></b><br/>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">' + text + "<br/>\n"
     if 'b' in keys and not images == '' and not images == None:
         for image in images:
             body = body + '<img src="' + image + '"></img><br/>'
@@ -359,14 +371,8 @@ def createFile():
             posts = pstt.xpath("//div[@class='post']")   
 
             for post in posts:
-                post = etree.tostring(post, pretty_print=True, encoding='utf-8')
-                print "POSTTTTTTTTTTTTTTTTTTT", post, "ENDDDDDDDDDDDDDD"
-                post = lxml.html.fromstring(post)
-                postTime = post.xpath("//div[@class='time']")
-                for pstm in postTime:
-                    print etree.tostring(pstm, pretty_print=True, encoding='utf-8', method="html")
-                print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1'
-                postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8')
+                postTime = lxml.html.fromstring(etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")).xpath("//div[@class='time']")
+                postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8', method="html")
                 postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
                 postTime = re.split(':',postTime)
                 postTime = datetime.time(int(postTime[0]),int(postTime[1]))

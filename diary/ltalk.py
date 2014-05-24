@@ -140,9 +140,9 @@ def findDT(DT):
                 DT = DT + datetime.timedelta(hours=1)
         if DT < breakMoment:
             global place
-            if place = 0:
+            if place == 0:
                 place = 'L'
-            else:
+            elif place != 'L':
                 place = place + 1
         DT = [str(DT.strftime("%d.%m.%Y")),str(DT.strftime("%H:%M"))]
         msc = [str(msc.strftime("%d.%m.%Y")),str(msc.strftime("%H:%M"))]
@@ -531,12 +531,15 @@ def executeFile():
     f2.close()
     
     if not body in pst:
-        maintime = re.split(':',time)
+        if place == "L":
+            maintime = re.split(':',msc[1])
+        else:
+            maintime = re.split(':',time)
         maintime = datetime.time(int(maintime[0]),int(maintime[1]))
         pstt = lxml.html.fromstring(pst) 
         posts = pstt.xpath("//div[@class='post']") 
         for post in posts:
-            postTime = post.xpath("//div[@class='time']")
+            postTime = lxml.html.fromstring(etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")).xpath("//div[@class='time']")
             postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8')
             postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
             postTime = re.split(':',postTime)

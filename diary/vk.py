@@ -83,9 +83,12 @@ def takePost(post):
 
 
 def makeComments(post,body):
-    if "reply reply_dived clear  reply_replieable" in etree.tostring(post, pretty_print=True, encoding='utf-8'):
+    if 'reply reply_dived clear  reply_replieable' in etree.tostring(post, pretty_print=True, encoding='utf-8') or 'reply reply_dived clear reply_replieable' in etree.tostring(post, pretty_print=True, encoding='utf-8'):
+        if 'reply reply_dived clear  reply_replieable' in etree.tostring(post, pretty_print=True, encoding='utf-8'):
+            comms = post.xpath("//div[@class='reply reply_dived clear  reply_replieable']")
+        else:
+            comms = post.xpath("//div[@class='reply reply_dived clear reply_replieable']")
         avatars = {}
-        comms = post.xpath("//div[@class='reply reply_dived clear  reply_replieable']")
         body = body + '<div class="comments">'
         for comm in comms:
             comm =  etree.tostring(comm, pretty_print=True, encoding='utf-8')
@@ -653,13 +656,14 @@ def createPost(body):
             posts = pstt.xpath("//div[@class='post']")   
 
             for post in posts:
-                postTime = post.xpath("//div[@class='time']")
+                postTime = lxml.html.fromstring(etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")).xpath("//div[@class='time']")
                 postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8')
                 postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
                 postTime = re.split(':',postTime)
                 postTime = datetime.time(int(postTime[0]),int(postTime[1]))
+                print postTime
                 post = etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")
-                if maintime >= postTime and body == '':
+                if maintime >= postTime or body == '':
                     newFile = newFile + post + '\n<br/>'
                 else:
  
