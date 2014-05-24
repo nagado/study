@@ -266,12 +266,12 @@ def executeText(text):
         if not 'link' in addTags:
             addTags.append('link')
     if '<!-- img' in text:
-        text = re.sub(r'<!-- img\[[a-z]+,[a-z]+,', '--IMG--', text)
-        text = re.sub(r'\] -->.*<!-- img_end -->', '--/IMG--', text)
+        text = re.sub(r'<!-- img[^>]*>.{,70} src="', '--IMG--', text)
+        text = re.sub(r'" alt="" onclick=".{,200}<!-- img_end -->(<br>)*', '--/IMG--', text)
         if not 'image' in addTags:
             addTags.append('image')
     if '" alt="Подкаст" title="Скачай и прослушай подкаст">' in text:
-        link = (re.findall(r'<a href="http://i[0-9]*.ltalk.ru/[0-9/]*.mp3" target="_blank" rel="nofollow" class="favicon_processed">[^<>]*</a>', text))[0]
+        link = (re.findall(r'<a href="http://i[0-9]*.ltalk.ru/[0-9a-zA-Z/_\-\=\+]*.mp3" target="_blank" rel="nofollow" class="favicon_processed">[^<>]*</a>', text))[0]
         text = text.replace(link, '')
         name = re.sub(r'<[^<>]*>', '', link)
         link = re.sub(r'<a href="|" target.*', '', link)
@@ -287,7 +287,7 @@ def executeText(text):
                 link = doubling
                 os.remove(fileway)
             link = re.sub(r'Diary','../..',link)
-        audio = '<div id="audio">' + name + '\n<audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio>' + '</div>\n'
+        audio = '<div id="audio">' + name + '\n<br><audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio>' + '</div>\n'
     text = re.sub(r'<span class="u">', '<u>', text)
     text = re.sub(r'<span class="s">', '<s>', text)
     text = re.sub(r'</span><!--u-->', '</u>', text)
@@ -337,6 +337,8 @@ def chooseFileWay(link):
     name = re.split('\.', n.group(0))
     name[0] = 0 
     folderway = "Diary/.extras/Media/"
+    if not '.' in n.group(0):
+        name.append("jpeg")
     fileway = folderway + str(name[0]) + '.' + str(name[1])
 
     while os.path.exists(fileway):
@@ -581,9 +583,17 @@ arguments = []
 for i in range(len(sys.argv)):
     if '-' in sys.argv[i]:
         keys = keys + re.sub(r'[+-]*', '', sys.argv[i])
-    if (i != 0)and(not '-' in sys.argv[i]):
-        arguments.append(sys.argv[i])
-        
+    elif i != 0:
+        if '.html' in sys.argv[i] or '.htm' in sys.argv[i]:
+            arguments.append(sys.argv[i])
+
+        else:
+            arglist = os.listdir(sys.argv[i])
+
+            for arg in arglist:
+                if '.html' in arg or '.htm' in arg:
+                    arguments.append(sys.argv[i] + "/" + arg)
+
 if 'h' in keys:
     readme = open('README.txt', 'r')
     
