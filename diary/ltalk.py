@@ -287,7 +287,7 @@ def executeText(text):
                 link = doubling
                 os.remove(fileway)
             link = re.sub(r'Diary','../..',link)
-        audio = '<div class="audio">' + name + '\n<audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio>' + '</div>\n'
+        audio = '<div id="audio">' + name + '\n<audio controls>\n<source src="'+ link + '" type="audio/mpeg">\nYour browser does not support the audio element.\n</audio>' + '</div>\n'
     text = re.sub(r'<span class="u">', '<u>', text)
     text = re.sub(r'<span class="s">', '<s>', text)
     text = re.sub(r'</span><!--u-->', '</u>', text)
@@ -408,11 +408,11 @@ def moveFiles():
 def makeBody():
     if 'z' in keys:
         if place == 'L':
-            body = '<div class="post"><b>"' + title + '" ' + msc[0] + ' <div class="time"> ' + msc[1] + " </div> (" + date + " " + time + " DC) </b><br/>\n" + avatar + '\n<div class="text">' + text + "<br/>\n"
+            body = '<div id="post"><div id="post_body"><b>"' + title + '" ' + msc[0] + ' <div id="time"> ' + msc[1] + " </div> (" + date + " " + time + " DC) </b><br/>\n" + avatar + '\n<div id="text">' + text + "<br/>\n"
         else:
-            body = '<div class="post"><b>"' + title + '" ' + date + ' <div class="time"> ' + time + " </div> (" + msc[0] + " " + msc[1] + "  по Москве) </b><br/>\n" + avatar + '\n<div class="text">' + text + "<br/>\n"
+            body = '<div id="post"><div id="post_body"><b>"' + title + '" ' + date + ' <div id="time"> ' + time + " </div> (" + msc[0] + " " + msc[1] + "  по Москве) </b><br/>\n" + avatar + '\n<div id="text">' + text + "<br/>\n"
     else:
-        body = '<div class="post"><b>"' + title + '" ' + date + ' <div class="time"> ' + time + " </div></b><br/>\n" + avatar + '\n<div class="text">' + text + "<br/>\n"
+        body = '<div id="post"><div id="post_body"><b>"' + title + '" ' + date + ' <div id="time"> ' + time + " </div></b><br/>\n" + avatar + '\n<div id="text">' + text + "<br/>\n"
     if '<a class="tag2"' in doc[2]:
         body = body + '<br/>TAGS:'
 
@@ -420,18 +420,23 @@ def makeBody():
             body = body + " " + tag + ','
 
         body = body + "<br/></div>\n"
-
+    body = body + "</div>"
     if (comms != [])and(comms != None):
-        body = body + '<div class="comments">'
-
+        body = body + '<div id="comments">'
+        numcomm = len(comms)
+        if numcomm > 3:
+            body = body + '<a id="displayText" href="javascript:toggle();">Показать комментарии (' + str(numcomm - 3) + ')</a>\n<div id="toggleText" style="display: none">'
         for comm in comms:
+            numcomm = numcomm - 1
+            if numcomm == 2:
+                body = body + '</div>'
             if 'z' in keys:
                 if place == 'L':
-                    body = body + '<div class="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[5] + ' ' + comm[6] + ' (' + comm[1] + ' ' + comm[2] + ' DC)<br/>\n' + comm[4] + '</div></div>\n' 
+                    body = body + '<div id="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[5] + ' ' + comm[6] + ' (' + comm[1] + ' ' + comm[2] + ' DC)<br/>\n' + comm[4] + '</div></div>\n' 
                 else:
-                    body = body + '<div class="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + ' (' + comm[5] + ' ' + comm[6] + ' по Москве)<br/>\n' + comm[4] + '</div></div>\n' 
+                    body = body + '<div id="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + ' (' + comm[5] + ' ' + comm[6] + ' по Москве)<br/>\n' + comm[4] + '</div></div>\n' 
             else:
-                body = body + '<div class="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + '<br/>\n' + comm[4] + '</div></div>\n' 
+                body = body + '<div id="comm">' + comm[3] + '<div style="margin:50px;display:inline;"><hr>.....<b>' + comm[0] + '</b> ' + comm[1] + ' ' + comm[2] + '<br/>\n' + comm[4] + '</div></div>\n' 
         body = body + '</div>'
 
     body = body + "</div>"
@@ -441,7 +446,7 @@ def makeBody():
 
 def makeFile():
     f2 = open(postway,'w')
-    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:110px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n', etree.tostring(lxml.html.fromstring(body.decode("utf-8")), pretty_print=True, encoding="utf-8", method="html"), "</html></body>"
+    print >>f2, '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<link href="../../.extras/style.css" rel="stylesheet" type="text/css" />\n<script src="../../.extras/script.js"></script>\n</head>\n<body>\n', etree.tostring(lxml.html.fromstring(body.decode("utf-8")), pretty_print=True, encoding="utf-8", method="html"), "</html></body>"
     f2.close()
 
 
@@ -521,11 +526,19 @@ def loadExtras():
         os.makedirs("Diary/.extras/Media")
     if not os.path.exists("Diary/.extras/Media/ava.jpg"):
         urllib.urlretrieve("http://cs5298.userapi.com/g32561651/a_ea42f7ac.jpg", "Diary/.extras/Media/ava.jpg")
-        
+    if not os.path.exists("Diary/.extras/style.css"):
+        style = open("Diary/.extras/style.css", "w")
+        print >>style, "blockquote {\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\n#post_body {\nmin-height:110px;\n}\n\n#post {\nmin-height:110px;\n}\n\n#time {\ndisplay: inline;\n}\n\n#text {\nmargin-left:100px;\n}\n\n#text img {\nmax-height:700px; \nmax-width:700px;\n}\n\n#audio {\nmargin-left:20px;\ncolor:#0066ff;\n}\n\n#comm {\nmin-height:50px;\nmargin-top:10px;\n}\n\n#comments {\nmargin-left:150px;\n}\n\n#comments img {\nmax-height:300px; \nmax-width:700px;\n}\n"
+        style.close() 
+    if not os.path.exists("Diary/.extras/script.js"):
+        script = open("Diary/.extras/script.js", 'w')
+        print >>script, 'function toggle() {\n	var ele = document.getElementById("toggleText");\n	var text = document.getElementById("displayText");\n	if(ele.style.display == "block") {\n    		ele.style.display = "none";\n		text.innerHTML = "Показать комментарии";\n  	}\n	else {\n		ele.style.display = "block";\n		text.innerHTML = "Скрыть комментарии";\n	}\n} '
+        script.close()
+
 
 def executeFile():
     global body
-    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:110px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n'
+    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<link href="../../.extras/style.css" rel="stylesheet" type="text/css" />\n<script src="../../.extras/script.js"></script>\n</head>\n<body>\n'
     f2 = open(postway, 'r')
     pst = f2.read()
     f2.close()
@@ -537,9 +550,9 @@ def executeFile():
             maintime = re.split(':',time)
         maintime = datetime.time(int(maintime[0]),int(maintime[1]))
         pstt = lxml.html.fromstring(pst) 
-        posts = pstt.xpath("//div[@class='post']") 
+        posts = pstt.xpath("//div[@id='post']") 
         for post in posts:
-            postTime = lxml.html.fromstring(etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")).xpath("//div[@class='time']")
+            postTime = lxml.html.fromstring(etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")).xpath("//div[@id='time']")
             postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8')
             postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
             postTime = re.split(':',postTime)

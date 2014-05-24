@@ -54,7 +54,7 @@ def takePost(post):
         els = fullpost.xpath("//div[@class='wall_text']")
         for el in els:
             el = etree.tostring(el, pretty_print=True, encoding='utf-8')
-            body = ''
+            body = '<div id="post_body">'
             body = findDateAndTime(fullpost,body) + '<img src="../../.extras/Media/ava.jpg" height="100px;" align="left"></img>\n'
             text = re.compile(r'<a class="published_by_photo".*', re.DOTALL).sub(' ', el)
             body = findText(text, body)
@@ -62,7 +62,7 @@ def takePost(post):
             body = findImages(el,body)
             body = findVideo(el, body)
             body = findAudio(el, body)   
-            body = body + '</div>'
+            body = body + '</div></div>'
 
         body = makeComments(fullpost,body)
         tags = takeTags(tags)
@@ -78,19 +78,20 @@ def takePost(post):
         else:
             body = re.sub('TAGS: <br/>\n', '', body)
         
-        body = '<div class="post">' + body + '</div>\n'
+        body = '<div id="post">' + body + '</div>\n'
         createPost(body)
 
 
 def makeComments(post,body):
     if 'reply reply_dived clear  reply_replieable' in etree.tostring(post, pretty_print=True, encoding='utf-8') or 'reply reply_dived clear reply_replieable' in etree.tostring(post, pretty_print=True, encoding='utf-8'):
-        if 'reply reply_dived clear  reply_replieable' in etree.tostring(post, pretty_print=True, encoding='utf-8'):
-            comms = post.xpath("//div[@class='reply reply_dived clear  reply_replieable']")
-        else:
-            comms = post.xpath("//div[@class='reply reply_dived clear reply_replieable']")
+        comms = post.xpath("//div[@class='reply reply_dived clear  reply_replieable'] | //div[@class='reply reply_dived clear reply_replieable']")
         avatars = {}
-        body = body + '<div class="comments">'
+        body = body + '<div id="comments">'
+        listOfComms = []
+        numcomm = 0
+
         for comm in comms:
+            numcomm = numcomm + 1
             comm =  etree.tostring(comm, pretty_print=True, encoding='utf-8')
             comment = ''
             nic = re.findall('<a class="author" href="[^"]*" data-from-id="[^"]*">[^<>]*</a>', comm)
@@ -102,7 +103,6 @@ def makeComments(post,body):
             DT = DTs[0]
             msc = DTs[1]
             avatar = re.findall(r'(?<=<img src=")[^"]*(?=" width="50" height="50" class="reply_image"/>)',comm)
-
             if avatar[0] in avatars:
                 ava = '<img src="' + avatars[avatar[0]] + '" height="50px;" align="left"></img>'
             else:
@@ -110,7 +110,6 @@ def makeComments(post,body):
                 newOld = {avatar[0]:ava}
                 avatars.update(newOld)
                 ava = '<img src="' + ava + '" height="50px;" align="left"></img>'
-
             if '<div class="wall_reply_text">' in comm:
                 text = re.findall(r'<div class="wall_reply_text">.*', comm)
                 text = re.compile(r'^.*<div class="wall_reply_text">|</div>.*|<[^<>]*>', re.DOTALL).sub('', text[0])
@@ -128,13 +127,25 @@ def makeComments(post,body):
             text = findVideo(comm,text)
             if 'z' in keys:
                 if place == 'L':
-                    comment = '<div class="comm">' + ava + '<div style="margin-left:"50px";display:inline;"><hr>.....<b>' + nic + '</b> ' + msc[0] + ' ' + msc[1] + ' (' + DT[0] + ' ' + DT[1] + ' DT)' + '<br/>' + text + '</div></div>\n'
+                    comment = '<div id="comm">' + ava + '<div style="margin-left:"50px"; display:inline;"><hr>.....<b>' + nic + '</b> ' + msc[0] + ' ' + msc[1] + ' (' + DT[0] + ' ' + DT[1] + ' DT)' + '<br/>' + text + '</div></div>\n'
                 else:
-                    comment = '<div class="comm">' + ava + '<div style="margin-left:"50px";display:inline;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + ' (' + msc[0] + ' ' + msc[1] + ' по Москве)' + '<br/>' + text + '</div></div>\n' 
+                    comment = '<div id="comm">' + ava + '<div style="margin-left:"50px"; display:inline;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + ' (' + msc[0] + ' ' + msc[1] + ' по Москве)' + '<br/>' + text + '</div></div>\n' 
             else:
-                comment = '<div class="comm">' + ava + '<div style="margin-left:"50px";display:inline;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + '<br/>' + text + '</div></div>\n'
-            body = body + comment
-  
+                comment = '<div id="comm">' + ava + '<div style="margin-left:"50px";display:inline;"><hr>.....<b>' + nic + '</b> ' + DT[0] + ' ' + DT[1] + '<br/>' + text + '</div></div>\n'
+            listOfComms.append(comment)
+
+        if numcomm > 3:
+            body = body + '<a id="displayText" href="javascript:toggle();">Показать комментарии (' + str(numcomm - 3) + ')</a>\n<div id="toggleText" style="display: none">'
+            for i in range(0, numcomm):
+                if i == numcomm - 3:
+                    body = body + "</div>"
+                body = body + listOfComms[i]
+
+            body = body + '<div>'
+        else:
+            for comm in listOfComms:
+                body = body + comm
+
         body = body + '</div>'
 
     return body
@@ -142,7 +153,7 @@ def makeComments(post,body):
 
 def findText(text,body):
     global tags, texxt, p
-    body = body + '<div class="text">'
+    body = body + '<div id="text">'
     if '<div class="wall_post_text">' in text:
         text = re.sub('<br/>', '\n', text)
         if '<a href="http://vk.com/' in text:
@@ -262,7 +273,7 @@ def findImages(el, body):
 def findAudio(el, body):
     if '<div class="title_wrap fl_l"' in el:
         audios = re.findall('<input type="hidden" id=".*\n.*\n.*', el)
-        body = body + '<div class="audio">'
+        body = body + '<div id="audio">'
 
         for audio in audios:
             link = re.compile(r'^.*value="(?=http://)|(?<=.mp3).*',re.DOTALL).sub('',audio)
@@ -284,7 +295,7 @@ def findAudio(el, body):
 
 def findVideo(el, body):
     if '<a href="http://vk.com/video' in el:
-        body = body + '<div class="video">Video:<br/>\n'
+        body = body + '<div id="video">Video:<br/>\n'
         videos = re.findall('<div class="page_post_queue_narrow"><div class="page_post_sized.*\n.*\n.*', el)
         
         for video in videos:
@@ -374,16 +385,16 @@ def findDateAndTime(post,body):
         if 'z' in keys:
             if place == 'L':
                 if not k == "not accurate":
-                    body = body + '<b>' + msc[0] + ' <div class="time">' + msc[1] + '</div> (' + DT[0] + ' ' + DT[1] + ' DC) </b><br/> \n'
+                    body = body + '<b>' + msc[0] + ' <div id="time">' + msc[1] + '</div> (' + DT[0] + ' ' + DT[1] + ' DC) </b><br/> \n'
                 else:
-                    body = body + '<b>' + msc[0] + ' <div class="time">' + msc[1] + '</div> (' + DT[0] + ' ' + DT[1] + ' DC)</b>\n<sup>Время не было указано, может быть неточность не более, чем в 24часа</sup><br/>\n'
+                    body = body + '<b>' + msc[0] + ' <div id="time">' + msc[1] + '</div> (' + DT[0] + ' ' + DT[1] + ' DC)</b>\n<sup>Время не было указано, может быть неточность не более, чем в 24часа</sup><br/>\n'
             else:
                 if not k == "not accurate":
-                    body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве) </b><br/> \n'
+                    body = body + '<b>' + DT[0] + ' <div id="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве) </b><br/> \n'
                 else:
-                    body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве)</b>\n<sup>Время не было указано, может быть неточность не более, чем в +24часа</sup><br/>\n'
+                    body = body + '<b>' + DT[0] + ' <div id="time">' + DT[1] + '</div> (' + msc[0] + ' ' + msc[1] + ' по Москве)</b>\n<sup>Время не было указано, может быть неточность не более, чем в +24часа</sup><br/>\n'
         else:
-            body = body + '<b>' + DT[0] + ' <div class="time">' + DT[1] + '</div></b><br/>\n'
+            body = body + '<b>' + DT[0] + ' <div id="time">' + DT[1] + '</div></b><br/>\n'
 
     return body
 
@@ -643,7 +654,7 @@ def addConnections(idTags,idDay):
 
 
 def createPost(body):
-    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:110px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n' 
+    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n <link href="../../.extras/style.css" rel="stylesheet" type="text/css" />\n<script src="../../.extras/script.js"></script>\n</head>\n<body>\n' 
     body = etree.tostring(lxml.html.fromstring(body.decode("utf-8")), pretty_print=True, encoding="utf-8", method="html")
     if os.path.exists(fway + '.html'):
         f2 = open(fway + '.html', 'r')
@@ -653,15 +664,14 @@ def createPost(body):
             maintime = re.split(':',newPostTime)
             maintime = datetime.time(int(maintime[0]),int(maintime[1]))
             pstt = lxml.html.fromstring(pst) 
-            posts = pstt.xpath("//div[@class='post']")   
+            posts = pstt.xpath("//div[@id='post']")   
 
             for post in posts:
-                postTime = lxml.html.fromstring(etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")).xpath("//div[@class='time']")
+                postTime = lxml.html.fromstring(etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")).xpath("//div[@id='time']")
                 postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8')
                 postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
                 postTime = re.split(':',postTime)
                 postTime = datetime.time(int(postTime[0]),int(postTime[1]))
-                print postTime
                 post = etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")
                 if maintime >= postTime or body == '':
                     newFile = newFile + post + '\n<br/>'
@@ -688,6 +698,14 @@ def loadExtras():
         os.makedirs("Diary/.extras/Media")
     if not os.path.exists("Diary/.extras/Media/ava.jpg"):
         urllib.urlretrieve("http://cs5298.userapi.com/g32561651/a_ea42f7ac.jpg", "Diary/.extras/Media/ava.jpg")
+    if not os.path.exists("Diary/.extras/style.css"):
+        style = open("Diary/.extras/style.css", "w")
+        print >>style, "blockquote {\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\n#post_body {\nmin-height:110px;\n}\n\n#post {\nmin-height:110px;\n}\n\n#time {\ndisplay: inline;\n}\n\n#text {\nmargin-left:100px;\n}\n\n#text img {\nmax-height:700px; \nmax-width:700px;\n}\n\n#audio {\nmargin-left:20px;\ncolor:#0066ff;\n}\n\n#comm {\nmin-height:50px;\nmargin-top:10px;\n}\n\n#comments {\nmargin-left:150px;\n}\n\n#comments img {\nmax-height:300px; \nmax-width:700px;\n}\n"
+        style.close()
+    if not os.path.exists("Diary/.extras/script.js"):
+        script = open("Diary/.extras/script.js", 'w')
+        print >>script, 'function toggle() {\n	var ele = document.getElementById("toggleText");\n	var text = document.getElementById("displayText");\n	if(ele.style.display == "block") {\n    		ele.style.display = "none";\n		text.innerHTML = "Показать комментарии";\n  	}\n	else {\n		ele.style.display = "block";\n		text.innerHTML = "Скрыть комментарии";\n	}\n} '
+        script.close()
         
 
 ##MAIN:

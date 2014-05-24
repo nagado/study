@@ -255,23 +255,23 @@ def makePost():
         DT = twoDT[0]
         time = DT[1] 
         msc = twoDT[1]
-        body = '<div class="post"><b>' + DT[0] + ' <div class="time">' + DT[1] + "</div> (" + msc[0] + ' ' + msc[1] + ' по Москве)</b><br/>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">' + text + "<br/>\n"
+        body = '<div id="post"><b>' + DT[0] + ' <div id="time">' + DT[1] + "</div> (" + msc[0] + ' ' + msc[1] + ' по Москве)</b><br/>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div id="text">' + text + "<br/>\n"
     else:
         DT = findDT(time)
         time = DT[1]
-        body = '<div class="post"><b>' + DT[0] + '<div class="time"> ' + DT[1] + '</div></b><br/>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div class="text">' + text + "<br/>\n"
+        body = '<div id="post"><b>' + DT[0] + '<div id="time"> ' + DT[1] + '</div></b><br/>\n<img src="../../.extras/Media/ava.jpg" height=100px; align="left"></img>\n<div id="text">' + text + "<br/>\n"
     if 'b' in keys and not images == '' and not images == None:
         for image in images:
             body = body + '<img src="' + image + '"></img><br/>'
     if 'c' in keys and not audios == '' and not audios == None:
-        body = body + '<div class="audio">'
+        body = body + '<div id="audio">'
         
         for audio in audios:
             body = body + audio
 
         body = body + '</div>'
     if 'v' in keys and not videos == '' and not videos == None:
-        body = body + '<div class="video">'
+        body = body + '<div id="video">'
        
         for video in videos:
             body = body + video
@@ -358,7 +358,7 @@ def addConnections(idTags,idDay):
 
 def createFile():
     global body
-    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<style>\nblockquote\n{\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\ndiv.post\n{\nmin-height:110px;\n}\n\ndiv.time\n{\ndisplay: inline;\n}\n\ndiv.text\n{\nmargin-left:100px;\n}\n\ndiv.text img\n{\nmax-height:700px; \nmax-width:700px;\n}\n\ndiv.audio\n{\nmargin-left:20px;\ncolor:#0066ff;\n}\n\ndiv.comm\n{\nmin-height:50px;\nmargin-top:10px;\n}\n\ndiv.comments\n{\nmargin-top:80px;\nmargin-left:150px;\n}\n\ndiv.comments img\n{\nmax-height:300px; \nmax-width:700px;\n}\n</style>\n</head>\n<body>\n'
+    newFile = '<html>\n<html lang="ru">\n<head>\n<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n<link href="../../.extras/style.css" rel="stylesheet" type="text/css" />\n</head>\n<body>\n'
     body = etree.tostring(lxml.html.fromstring(body.decode("utf-8")), pretty_print=True, encoding="utf-8", method="html")
     if os.path.exists(fway):
         f2 = open(fway, 'r')
@@ -368,10 +368,10 @@ def createFile():
             maintime = re.split(':',time)
             maintime = datetime.time(int(maintime[0]),int(maintime[1]))
             pstt = lxml.html.fromstring(pst) 
-            posts = pstt.xpath("//div[@class='post']")   
+            posts = pstt.xpath("//div[@id='post']")   
 
             for post in posts:
-                postTime = lxml.html.fromstring(etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")).xpath("//div[@class='time']")
+                postTime = lxml.html.fromstring(etree.tostring(post, pretty_print=True, encoding='utf-8', method="html")).xpath("//div[@id='time']")
                 postTime = etree.tostring(postTime[0], pretty_print=True, encoding='utf-8', method="html")
                 postTime = re.sub(r'^.*<div[^>]*>|</div>.*|\s*','',postTime)
                 postTime = re.split(':',postTime)
@@ -401,6 +401,10 @@ def loadExtras():
         os.makedirs("Diary/.extras/Media")
     if not os.path.exists("Diary/.extras/Media/ava.jpg"):
         urllib.urlretrieve("http://cs5298.userapi.com/g32561651/a_ea42f7ac.jpg", "Diary/.extras/Media/ava.jpg")
+    if not os.path.exists("Diary/.extras/style.css"):
+        style = open("Diary/.extras/style.css", "w")
+        print >>style, "blockquote {\nborder-left: #999999 3px solid; \npadding-left: 5px;\n}\n\n#post {\nmin-height:110px;\n}\n\n#time {\ndisplay: inline;\n}\n\n#text {\nmargin-left:100px;\n}\n\n#text img {\nmax-height:700px; \nmax-width:700px;\n}\n\n#audio {\nmargin-left:20px;\ncolor:#0066ff;\n}\n\n#comm {\nmin-height:50px;\nmargin-top:10px;\n}\n\n#comments {\nmargin-left:150px;\n}\n\n#comments img {\nmax-height:300px; \nmax-width:700px;\n}\n"
+
 
 keys = ''
 
