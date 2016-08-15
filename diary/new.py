@@ -1,3 +1,5 @@
+##My first independent python project. Not necessarily clean, because I haven't started learning it seroisly back then.
+
 # -*- coding:utf-8 -*-
 import re, datetime, os, urllib, lxml.html, sqlite3, sys, filecmp, shutil
 from lxml import etree
