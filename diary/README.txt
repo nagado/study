@@ -1,3 +1,5 @@
+My first independent python project. Not necessarily clean, because I haven't started learning it seroisly back then.
+
 You can use ltalk.py and vk.py for downloaded html pages, to add them in diary (vk.py works for vk.com pages, ltalk.py works for beon.ru-like-sites, but only for one post in time, so it shouldn't be more than one post on html page). Also, you can use new.py, to add usual text records. Soon there will be version for online downloading and sinc with those services 
 
 Special keys:
